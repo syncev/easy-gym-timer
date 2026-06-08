@@ -1,0 +1,477 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  --green: #00e676;
+  --orange: #ff6d00;
+  --blue: #4fc3f7;
+  --gray: #888899;
+  --bg: #0d0d1a;
+  --surface: #1a1a2e;
+  --surface2: #252540;
+  --text: #e8e8f0;
+  --text-dim: #8888aa;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', Arial, sans-serif;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#app {
+  width: 100%;
+  max-width: 420px;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.hidden { display: none !important; }
+
+/* ========== CONFIG PANEL ========== */
+#config-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 18px 16px;
+  overflow-y: auto;
+}
+
+h1 {
+  text-align: center;
+  font-size: 1.8rem;
+  letter-spacing: 3px;
+  color: var(--green);
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+.config-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.config-row {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.config-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.config-label-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 76px;
+  gap: 2px;
+}
+
+.config-sublabel {
+  font-size: 0.67rem;
+  color: var(--text-dim);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.num-input {
+  background: var(--surface2);
+  border: 2px solid #333355;
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-align: center;
+  width: 68px;
+  height: 48px;
+  outline: none;
+  -moz-appearance: textfield;
+}
+.num-input::-webkit-inner-spin-button,
+.num-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.num-input:focus { border-color: var(--green); }
+.num-input.small { width: 54px; height: 44px; font-size: 1.1rem; }
+
+.unit {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+/* Toggle */
+.toggle-wrap {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.toggle-wrap input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: #333355;
+  border-radius: 28px;
+  transition: background 0.2s;
+}
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  left: 3px;
+  top: 3px;
+  transition: transform 0.2s;
+}
+.toggle-wrap input:checked + .toggle-slider { background: var(--green); }
+.toggle-wrap input:checked + .toggle-slider::before { transform: translateX(24px); }
+
+/* Phases row */
+.phases-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+.phases { display: flex; gap: 14px; }
+.phase-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.phase-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.phase-label.conc  { color: var(--green); }
+.phase-label.isom  { color: var(--blue); }
+.phase-label.excen { color: var(--orange); }
+
+/* Toggle + "Al fallo" label stacked vertically so they never split across lines */
+.fallo-toggle-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  margin-left: 4px;
+}
+
+/* Al fallo serie selector buttons — full-width so they wrap to a second line */
+.fallo-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+  padding-top: 6px;
+  border-top: 1px solid #2a2a44;
+  margin-top: 4px;
+}
+
+.fallo-serie-btn {
+  background: var(--surface2);
+  border: 2px solid #333355;
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-weight: 700;
+  min-width: 38px;
+  height: 36px;
+  padding: 0 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.fallo-serie-btn.active {
+  background: var(--green);
+  border-color: var(--green);
+  color: #000;
+}
+
+/* Pausa toggle section */
+.pausa-toggles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Buttons */
+.btn-primary {
+  width: 100%;
+  padding: 18px;
+  border-radius: 16px;
+  border: none;
+  background: var(--green);
+  color: #000;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  cursor: pointer;
+  margin-top: 14px;
+  text-transform: uppercase;
+  transition: opacity 0.15s;
+}
+.btn-primary:active { opacity: 0.8; }
+
+/* Back button */
+.btn-back {
+  background: var(--surface2);
+  border: none;
+  color: var(--text);
+  font-size: 1.3rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.btn-back:active { background: #3a3a5a; }
+
+/* ========== WORKOUT PANEL ========== */
+#workout-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 16px 20px;
+}
+
+#status-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+#status-info {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#status-info span {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+#status-phase-name {
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  color: var(--text) !important;
+}
+
+/* Circle */
+#circle-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding-top: 20%;
+}
+
+#circle-svg {
+  width: min(80vw, 300px);
+  height: min(80vw, 300px);
+}
+
+/* Countdown text shown above the circle */
+#circle-timer {
+  font-size: 3.35rem;   /* 2.9 × 1.15 */
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: 1px;
+  text-align: center;
+  width: 100%;
+  line-height: 1;
+  margin-bottom: 4px;
+  margin-top: 12%;      /* shift down ~50px on a 420px-wide container */
+}
+
+/* Thin ring showing the max circle size as a guide */
+#circle-track {
+  fill: none;
+  stroke: var(--surface2);
+  stroke-width: 4;
+  transition: stroke 0.4s ease;
+}
+
+/* Gray floor dot — always visible, defines the minimum reference size */
+#circle-gray {
+  fill: #3a3a5a;
+}
+
+/* Solid circle that grows/shrinks with phase progress */
+#circle-fill {
+  fill: var(--green);
+  transition: fill 0.4s ease;
+}
+
+/* Al-fallo rep counter */
+#fallo-counter {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 0 6px;
+}
+
+#fallo-count {
+  font-size: 2.4rem;
+  font-weight: 900;
+  color: var(--green);
+  line-height: 1;
+}
+
+/* Controls */
+#controls {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.btn-control {
+  flex: 1;
+  height: 72px;
+  border-radius: 18px;
+  border: none;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.15s;
+}
+.btn-control:active { background: var(--surface2); }
+.btn-skip { font-size: 1.4rem; }
+.btn-skip span { font-size: 0.85rem; font-weight: 600; color: var(--text-dim); }
+
+/* ========== REST PANEL ========== */
+#rest-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 24px 24px;
+  gap: 0;
+}
+
+#rest-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+#rest-label {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+#rest-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+#rest-countdown {
+  font-size: 7rem;
+  font-weight: 900;
+  color: var(--blue);
+  line-height: 1;
+}
+
+#rest-bar-wrap {
+  width: 100%;
+  height: 10px;
+  background: var(--surface);
+  border-radius: 10px;
+  overflow: hidden;
+}
+#rest-bar {
+  height: 100%;
+  background: var(--blue);
+  border-radius: 10px;
+  width: 100%;
+}
+
+/* ========== DONE PANEL ========== */
+#done-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  gap: 24px;
+}
+#done-icon { font-size: 6rem; }
+#done-text { font-size: 1.6rem; font-weight: 700; color: var(--green); text-align: center; }
+
+#done-fallo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.done-fallo-label {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+#done-fallo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+.done-fallo-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 10px 16px;
+}
+.done-fallo-entry .entry-label {
+  font-size: 0.95rem;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+.done-fallo-entry .entry-reps {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--green);
+}

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a1a2e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Gym Timer</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- CONFIG PANEL -->
+    <div id="config-panel">
+      <h1>Gym Timer</h1>
+
+      <div class="config-grid">
+
+        <!-- Series + Reps (merged card) -->
+        <div class="config-row">
+          <span class="config-label">Series</span>
+          <input type="number" id="num-series" min="1" max="20" value="4" class="num-input">
+          <span class="config-label">Reps</span>
+          <input type="number" id="num-reps" min="1" max="30" value="12" class="num-input">
+          <div class="fallo-toggle-group">
+            <label class="toggle-wrap">
+              <input type="checkbox" id="toggle-fallo">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="unit">Al fallo</span>
+          </div>
+          <div id="fallo-series-btns" class="fallo-btns hidden"></div>
+        </div>
+
+        <!-- Superserie -->
+        <div class="config-row">
+          <span class="config-label">Superserie</span>
+          <label class="toggle-wrap">
+            <input type="checkbox" id="toggle-super">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="unit">Descanso de:</span>
+          <input type="number" id="super-rest" min="1" max="60" value="10" class="num-input small" disabled>
+          <span class="unit">s</span>
+        </div>
+
+        <!-- Descanso entre series -->
+        <div class="config-row">
+          <span class="config-label">Descanso interseries</span>
+          <input type="number" id="rest-series" min="5" max="300" value="120" class="num-input">
+          <span class="unit">s</span>
+        </div>
+
+        <!-- Fases de rep -->
+        <div class="config-row phases-row">
+          <span class="config-label">Fases (s)</span>
+          <div class="phases">
+            <div class="phase-item">
+              <span class="phase-label conc">Contr.</span>
+              <input type="number" id="phase-conc" min="1" max="10" value="1" class="num-input small">
+            </div>
+            <div class="phase-item">
+              <span class="phase-label isom">Isom.</span>
+              <input type="number" id="phase-isom" min="0" max="10" value="1" class="num-input small">
+            </div>
+            <div class="phase-item">
+              <span class="phase-label excen">Excen.</span>
+              <input type="number" id="phase-excen" min="1" max="10" value="3" class="num-input small">
+            </div>
+          </div>
+        </div>
+
+        <!-- Pausa fase -->
+        <div class="config-row">
+          <span class="config-label">Pausa</span>
+          <!-- Shown when superserie OFF -->
+          <div id="pausa-single" class="pausa-toggles">
+            <label class="toggle-wrap">
+              <input type="checkbox" id="toggle-pausa">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <!-- Shown when superserie ON -->
+          <div id="pausa-dual" class="pausa-toggles hidden">
+            <span class="unit">Ej.1</span>
+            <label class="toggle-wrap">
+              <input type="checkbox" id="toggle-pausa-1">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="unit">Ej.2</span>
+            <label class="toggle-wrap">
+              <input type="checkbox" id="toggle-pausa-2">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <input type="number" id="phase-pausa" min="1" max="10" value="1" class="num-input small" disabled>
+          <span class="unit">s</span>
+        </div>
+
+      </div>
+
+      <button id="btn-start" class="btn-primary">INICIAR</button>
+    </div>
+
+    <!-- WORKOUT PANEL -->
+    <div id="workout-panel" class="hidden">
+
+      <!-- Status bar -->
+      <div id="status-bar">
+        <button id="btn-back-workout" class="btn-back">←</button>
+        <div id="status-info">
+          <span id="status-serie">Serie 1/4</span>
+          <span id="status-rep">Rep 1/10</span>
+          <span id="status-phase-name">Contraer</span>
+        </div>
+      </div>
+
+      <!-- Countdown text above circle -->
+      <div id="circle-timer">1.00</div>
+
+      <!-- Animated circle -->
+      <div id="circle-container">
+        <svg id="circle-svg" viewBox="0 0 300 300">
+          <circle id="circle-track" cx="150" cy="150" r="120" />
+          <!-- Permanent gray floor: always visible when fill shrinks away -->
+          <circle id="circle-gray" cx="150" cy="150" r="20" />
+          <!-- Animated fill: grows 0→120 (conc) or shrinks 120→0 (excen) -->
+          <circle id="circle-fill" cx="150" cy="150" r="0" />
+        </svg>
+      </div>
+
+      <!-- Al-fallo rep counter (hidden in normal mode) -->
+      <div id="fallo-counter" class="hidden">
+        <span id="fallo-count">0</span>
+        <span class="unit">completadas</span>
+      </div>
+
+      <!-- Controls -->
+      <div id="controls">
+        <button id="btn-play-pause" class="btn-control">⏸</button>
+        <button id="btn-skip" class="btn-control btn-skip">⏭<span>Skip serie</span></button>
+      </div>
+
+    </div>
+
+    <!-- REST PANEL -->
+    <div id="rest-panel" class="hidden">
+      <div id="rest-header">
+        <button id="btn-back-rest" class="btn-back">←</button>
+        <div id="rest-label">Descanso</div>
+      </div>
+      <div id="rest-main">
+        <div id="rest-countdown">90</div>
+        <div id="rest-bar-wrap"><div id="rest-bar"></div></div>
+      </div>
+      <button id="btn-skip-rest" class="btn-primary">Saltar descanso</button>
+    </div>
+
+    <!-- DONE PANEL -->
+    <div id="done-panel" class="hidden">
+      <div id="done-icon">💪</div>
+      <div id="done-text">Entrenamiento completo</div>
+      <div id="done-fallo" class="hidden">
+        <div class="done-fallo-label">Reps por serie</div>
+        <div id="done-fallo-list"></div>
+      </div>
+      <button id="btn-restart" class="btn-primary">Nueva sesión</button>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js');
+    }
+  </script>
+</body>
+</html>
