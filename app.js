@@ -618,3 +618,13 @@ el.togglePausa2.addEventListener('change', updatePausaInput);
 // ── Init disabled states ───────────────────────────────────────────────────
 el.superRest.style.opacity = '0.4';
 el.phasePausa.style.opacity = '0.4';
+
+// ── Adaptive height (split-view detection) ────────────────────────────────
+function updateLayout() {
+  const h = window.innerHeight;
+  document.documentElement.style.setProperty('--vh', h + 'px');
+  document.documentElement.classList.toggle('compact', h / window.screen.height < 0.65 || h < 500);
+}
+window.addEventListener('resize', updateLayout);
+window.visualViewport?.addEventListener('resize', updateLayout);
+updateLayout();
