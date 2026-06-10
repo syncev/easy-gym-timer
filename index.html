@@ -23,7 +23,19 @@
           <span class="config-label">Series</span>
           <input type="number" id="num-series" min="1" max="20" value="4" class="num-input">
           <span class="config-label">Reps</span>
+          <span id="reps-a-label" class="unit hidden">A</span>
           <input type="number" id="num-reps" min="1" max="30" value="12" class="num-input">
+          <div id="reps-distintas-group" class="fallo-toggle-group hidden">
+            <label class="toggle-wrap">
+              <input type="checkbox" id="toggle-reps-distintas">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="unit">Reps dif.</span>
+          </div>
+          <div id="reps-b-group" class="reps-b-group hidden">
+            <span class="unit">B</span>
+            <input type="number" id="num-reps-2" min="1" max="30" value="12" class="num-input">
+          </div>
           <div class="fallo-toggle-group">
             <label class="toggle-wrap">
               <input type="checkbox" id="toggle-fallo">
@@ -55,19 +67,62 @@
 
         <!-- Fases de rep -->
         <div class="config-row phases-row">
-          <span class="config-label">Fases (s)</span>
-          <div class="phases">
-            <div class="phase-item">
-              <span class="phase-label conc">Contr.</span>
-              <input type="number" id="phase-conc" min="1" max="10" value="1" class="num-input small">
+          <div class="phases-header">
+            <span class="config-label">Fases (s)</span>
+            <div id="fases-distintas-group" class="fases-distintas-toggle hidden">
+              <label class="toggle-wrap">
+                <input type="checkbox" id="toggle-fases-distintas">
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="unit">Fases distintas</span>
             </div>
-            <div class="phase-item">
-              <span class="phase-label isom">Isom.</span>
-              <input type="number" id="phase-isom" min="0" max="10" value="1" class="num-input small">
+          </div>
+          <div class="phases-set" id="phases-set-1">
+            <span id="phases-ej1-label" class="unit hidden">Ej. 1</span>
+            <div class="phases">
+              <div class="phase-item">
+                <span class="phase-label conc">Contr.</span>
+                <input type="number" id="phase-conc" min="1" max="10" value="1" class="num-input small">
+              </div>
+              <div class="phase-item">
+                <span class="phase-label isom">Isom.</span>
+                <input type="number" id="phase-isom" min="0" max="10" value="1" class="num-input small">
+              </div>
+              <div class="phase-item">
+                <span class="phase-label excen">Excen.</span>
+                <input type="number" id="phase-excen" min="1" max="10" value="3" class="num-input small">
+              </div>
             </div>
-            <div class="phase-item">
-              <span class="phase-label excen">Excen.</span>
-              <input type="number" id="phase-excen" min="1" max="10" value="3" class="num-input small">
+            <div class="invert-wrap">
+              <label class="toggle-wrap">
+                <input type="checkbox" id="toggle-invert-1">
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="unit">Invertir</span>
+            </div>
+          </div>
+          <div class="phases-set hidden" id="phases-set-2">
+            <span class="unit phases-ej-label">Ej. 2</span>
+            <div class="phases">
+              <div class="phase-item">
+                <span class="phase-label conc">Contr.</span>
+                <input type="number" id="phase-conc-2" min="1" max="10" value="1" class="num-input small">
+              </div>
+              <div class="phase-item">
+                <span class="phase-label isom">Isom.</span>
+                <input type="number" id="phase-isom-2" min="0" max="10" value="1" class="num-input small">
+              </div>
+              <div class="phase-item">
+                <span class="phase-label excen">Excen.</span>
+                <input type="number" id="phase-excen-2" min="1" max="10" value="3" class="num-input small">
+              </div>
+            </div>
+            <div class="invert-wrap">
+              <label class="toggle-wrap">
+                <input type="checkbox" id="toggle-invert-2">
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="unit">Invertir</span>
             </div>
           </div>
         </div>
@@ -166,9 +221,38 @@
         <div class="done-fallo-label">Reps por serie</div>
         <div id="done-fallo-list"></div>
       </div>
+      <div id="done-rest">
+        <div class="done-rest-title">Descanso antes de siguiente</div>
+        <div id="done-rest-presets">
+          <button class="rest-preset-btn" data-sec="90">90s</button>
+          <button class="rest-preset-btn" data-sec="120">120s</button>
+          <button class="rest-preset-btn" data-sec="150">150s</button>
+          <button class="rest-preset-btn" data-sec="180">180s</button>
+          <button class="rest-preset-btn" data-sec="0">+ Custom</button>
+        </div>
+        <div id="done-rest-custom" class="hidden">
+          <input type="number" id="done-rest-custom-input" min="10" max="900" value="120" class="num-input small">
+          <span class="unit">s</span>
+        </div>
+      </div>
       <button id="btn-restart" class="btn-primary">Nueva sesión</button>
     </div>
 
+  </div>
+
+  <!-- Rest-between-sessions toast (fixed, slides from top) -->
+  <div id="rest-toast" class="hidden">
+    <div class="rest-toast-inner">
+      <div class="rest-toast-info">
+        <span class="rest-toast-label">Siguiente en</span>
+        <span id="rest-toast-time">90</span>
+        <span class="unit">s</span>
+      </div>
+      <button id="rest-toast-close">✕</button>
+    </div>
+    <div class="rest-toast-bar-wrap">
+      <div id="rest-toast-bar"></div>
+    </div>
   </div>
 
   <script src="app.js"></script>

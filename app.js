@@ -31,6 +31,24 @@ function beepCountdownGo() {
 }
 // Grave tone for each second of the excentric phase
 function beepExcen() { beep(310, 0.13, 0.32, 'triangle'); }
+// Single warm bell at 15s remaining
+function beepBell15() { beep(880, 0.8, 0.28, 'sine'); }
+// Two-note bell at 10s remaining (more urgent)
+function beepBell10() {
+  beep(1046, 0.6, 0.3, 'sine');
+  setTimeout(() => beep(1318, 0.6, 0.26, 'sine'), 250);
+}
+// Halfway reps: two ascending notes
+function beepHalfReps() {
+  beep(784, 0.12, 0.25, 'sine');
+  setTimeout(() => beep(1047, 0.18, 0.3, 'sine'), 160);
+}
+// Last rep: three-note ascending arpeggio
+function beepLastRep() {
+  beep(1047, 0.1, 0.28, 'sine');
+  setTimeout(() => beep(1319, 0.1, 0.28, 'sine'), 110);
+  setTimeout(() => beep(1568, 0.22, 0.35, 'sine'), 220);
+}
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
 const panels = {
@@ -73,10 +91,30 @@ const el = {
   restCountdown:   document.getElementById('rest-countdown'),
   restBar:         document.getElementById('rest-bar'),
   restLabel:       document.getElementById('rest-label'),
-  falloCounter:    document.getElementById('fallo-counter'),
-  falloCount:      document.getElementById('fallo-count'),
-  doneFallo:       document.getElementById('done-fallo'),
-  doneFalloList:   document.getElementById('done-fallo-list'),
+  falloCounter:         document.getElementById('fallo-counter'),
+  falloCount:           document.getElementById('fallo-count'),
+  doneFallo:            document.getElementById('done-fallo'),
+  doneFalloList:        document.getElementById('done-fallo-list'),
+  restToast:            document.getElementById('rest-toast'),
+  restToastTime:        document.getElementById('rest-toast-time'),
+  restToastBar:         document.getElementById('rest-toast-bar'),
+  restToastClose:       document.getElementById('rest-toast-close'),
+  doneRestCustomWrap:   document.getElementById('done-rest-custom'),
+  doneRestCustomInput:  document.getElementById('done-rest-custom-input'),
+  toggleRepsDistintas:  document.getElementById('toggle-reps-distintas'),
+  numReps2:             document.getElementById('num-reps-2'),
+  repsDistintasGroup:   document.getElementById('reps-distintas-group'),
+  repsBGroup:           document.getElementById('reps-b-group'),
+  repsALabel:           document.getElementById('reps-a-label'),
+  toggleFasesDistintas: document.getElementById('toggle-fases-distintas'),
+  fasesDistintasGroup:  document.getElementById('fases-distintas-group'),
+  phasesSet2:           document.getElementById('phases-set-2'),
+  phasesEj1Label:       document.getElementById('phases-ej1-label'),
+  phaseConc2:           document.getElementById('phase-conc-2'),
+  phaseIsom2:           document.getElementById('phase-isom-2'),
+  phaseExcen2:          document.getElementById('phase-excen-2'),
+  toggleInvert1:        document.getElementById('toggle-invert-1'),
+  toggleInvert2:        document.getElementById('toggle-invert-2'),
 };
 
 // ── Module-level state ─────────────────────────────────────────────────────
@@ -91,6 +129,9 @@ let wakeLock = null;
 // Keys of series that are "al fallo" — "N" (no super) or "N-1"/"N-2" (super)
 let falloSeriesSet = new Set();
 
+let selectedRestSecs = null;
+let restAfterTicker  = null;
+
 // ── Circle ─────────────────────────────────────────────────────────────────
 const R_MAX = 120;
 
@@ -104,7 +145,7 @@ const PHASE_COLORS = {
 function setCircle(phase, progress) {
   let r;
   if      (phase === 'conc')  r = R_MAX * progress;
-  else if (phase === 'isom')  r = R_MAX;
+  else if (phase === 'isom')  r = isInvertPhases() ? 0 : R_MAX;
   else if (phase === 'excen') r = R_MAX * (1 - progress);
   else                        r = 0;
 
@@ -196,9 +237,17 @@ function readConfig() {
     phaseIsom:     Math.max(0, parseInt(el.phaseIsom.value)  || 0),
     phaseExcen:    Math.max(1, parseInt(el.phaseExcen.value) || 3),
     phasePausa:    Math.max(1, parseInt(el.phasePausa.value) || 1),
-    pausaEnabled:  el.togglePausa.checked,
-    pausa1Enabled: el.togglePausa1.checked,
-    pausa2Enabled: el.togglePausa2.checked,
+    pausaEnabled:   el.togglePausa.checked,
+    pausa1Enabled:  el.togglePausa1.checked,
+    pausa2Enabled:  el.togglePausa2.checked,
+    repsDistintas:  el.toggleRepsDistintas.checked,
+    totalReps2:     parseInt(el.numReps2.value) || 10,
+    fasesDistintas: el.toggleFasesDistintas.checked,
+    phaseConc2:     Math.max(1, parseInt(el.phaseConc2.value)  || 1),
+    phaseIsom2:     Math.max(0, parseInt(el.phaseIsom2.value)  || 0),
+    phaseExcen2:    Math.max(1, parseInt(el.phaseExcen2.value) || 3),
+    invertPhases1:  el.toggleInvert1.checked,
+    invertPhases2:  el.toggleInvert2.checked,
   };
 }
 
@@ -221,6 +270,11 @@ function formatFalloKey(key) {
   return `Serie ${key}`;
 }
 
+function getTotalReps() {
+  if (cfg.superEnabled && cfg.repsDistintas && state.superExercise === 2) return cfg.totalReps2;
+  return cfg.totalReps;
+}
+
 // Syncs the counter element and shows/hides it for the current serie
 function updateFalloCounterVisibility() {
   const isFallo = isCurrentSeriFallo();
@@ -231,6 +285,11 @@ function updateFalloCounterVisibility() {
 // ── Phase helpers ──────────────────────────────────────────────────────────
 const PHASE_NAMES = { conc: 'Contraer', isom: 'Mantener', excen: 'Bajar', pausa: 'Pausa' };
 
+function isInvertPhases() {
+  if (cfg.superEnabled && cfg.fasesDistintas && state.superExercise === 2) return cfg.invertPhases2;
+  return cfg.invertPhases1;
+}
+
 function isPausaEnabled() {
   if (cfg.superEnabled) {
     return state.superExercise === 1 ? cfg.pausa1Enabled : cfg.pausa2Enabled;
@@ -239,19 +298,35 @@ function isPausaEnabled() {
 }
 
 function getPhaseOrder() {
+  const useB = cfg.superEnabled && cfg.fasesDistintas && state.superExercise === 2;
+  const hasIsom = (useB ? cfg.phaseIsom2 : cfg.phaseIsom) > 0;
+  if (isInvertPhases()) {
+    const phases = ['excen'];
+    if (hasIsom) phases.push('isom');
+    phases.push('conc');
+    if (isPausaEnabled()) phases.push('pausa');
+    return phases;
+  }
   const phases = ['conc'];
-  if (cfg.phaseIsom > 0) phases.push('isom');
+  if (hasIsom) phases.push('isom');
   phases.push('excen');
   if (isPausaEnabled()) phases.push('pausa');
   return phases;
 }
 
 function phaseDuration(ph) {
-  return { conc: cfg.phaseConc, isom: cfg.phaseIsom, excen: cfg.phaseExcen, pausa: cfg.phasePausa }[ph];
+  const useB = cfg.superEnabled && cfg.fasesDistintas && state.superExercise === 2;
+  return {
+    conc:  useB ? cfg.phaseConc2  : cfg.phaseConc,
+    isom:  useB ? cfg.phaseIsom2  : cfg.phaseIsom,
+    excen: useB ? cfg.phaseExcen2 : cfg.phaseExcen,
+    pausa: cfg.phasePausa,
+  }[ph];
 }
 
 // ── START ──────────────────────────────────────────────────────────────────
 el.btnStart.addEventListener('click', () => {
+  dismissRestToast();
   if (ctx.state === 'suspended') ctx.resume();
   cfg = readConfig();
   state = {
@@ -272,7 +347,7 @@ el.btnStart.addEventListener('click', () => {
   el.falloCount.textContent = '0';
   updateFalloCounterVisibility();
   startCountdown(() => {
-    startPhase('conc');
+    startPhase(getPhaseOrder()[0]);
     startTicker();
   });
 });
@@ -335,7 +410,7 @@ function advancePhase() {
 // ── Rep done ───────────────────────────────────────────────────────────────
 function repDone() {
   const fallo = isCurrentSeriFallo();
-  const isLastRep = !fallo && state.rep >= cfg.totalReps;
+  const isLastRep = !fallo && state.rep >= getTotalReps();
   if (isLastRep) {
     serieDone();
   } else {
@@ -345,7 +420,13 @@ function repDone() {
     }
     state.rep++;
     updateStatusBar();
-    startPhase('conc');
+    if (!fallo) {
+      const total = getTotalReps();
+      const half  = Math.floor(total / 2) + 1;
+      if (state.rep === total)                  beepLastRep();
+      else if (state.rep === half && half < total) beepHalfReps();
+    }
+    startPhase(getPhaseOrder()[0]);
   }
 }
 
@@ -391,7 +472,7 @@ function startSuperRest() {
     updateStatusBar();
     updateFalloCounterVisibility();
     showPanel('workout');
-    startPhase('conc');
+    startPhase(getPhaseOrder()[0]);
     startTicker();
   });
 }
@@ -414,7 +495,7 @@ function startRest(seconds) {
     updateStatusBar();
     updateFalloCounterVisibility();
     showPanel('workout');
-    startPhase('conc');
+    startPhase(getPhaseOrder()[0]);
     startTicker();
   });
 }
@@ -431,6 +512,8 @@ function startRestTicker(total, onComplete) {
     if (state.paused) return;
     remaining--;
     el.restCountdown.textContent = Math.max(0, remaining);
+    if (remaining === 15) beepBell15();
+    if (remaining === 10) beepBell10();
     // Ascending tones 5→1 (low→high), same direction as initial countdown
     if (remaining >= 1 && remaining <= 5) beepCountdownTick(remaining);
     if (remaining <= 0) {
@@ -471,7 +554,7 @@ el.btnSkipRest.addEventListener('click', () => {
     updateStatusBar();
     updateFalloCounterVisibility();
     showPanel('workout');
-    startPhase('conc');
+    startPhase(getPhaseOrder()[0]);
     startTicker();
   } else {
     state.resting = false;
@@ -481,7 +564,7 @@ el.btnSkipRest.addEventListener('click', () => {
     updateStatusBar();
     updateFalloCounterVisibility();
     showPanel('workout');
-    startPhase('conc');
+    startPhase(getPhaseOrder()[0]);
     startTicker();
   }
 });
@@ -495,6 +578,39 @@ el.btnPlayPause.addEventListener('click', () => {
     el.restBar.style.width = '0%';
   }
 });
+
+// ── Rest-between-sessions toast ────────────────────────────────────────────
+function startRestToast(seconds) {
+  clearInterval(restAfterTicker);
+  let remaining = seconds;
+  el.restToastTime.textContent = remaining;
+  el.restToastBar.style.transition = 'none';
+  el.restToastBar.style.width = '100%';
+  el.restToast.classList.remove('hidden');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.restToast.classList.add('visible');
+    el.restToastBar.style.transition = `width ${seconds}s linear`;
+    el.restToastBar.style.width = '0%';
+  }));
+  restAfterTicker = setInterval(() => {
+    remaining--;
+    el.restToastTime.textContent = Math.max(0, remaining);
+    if (remaining >= 1 && remaining <= 5) beepCountdownTick(remaining);
+    if (remaining <= 0) {
+      clearInterval(restAfterTicker);
+      beepCountdownGo();
+      setTimeout(dismissRestToast, 600);
+    }
+  }, 1000);
+}
+
+function dismissRestToast() {
+  clearInterval(restAfterTicker);
+  el.restToast.classList.remove('visible');
+  setTimeout(() => el.restToast.classList.add('hidden'), 400);
+}
+
+el.restToastClose.addEventListener('click', dismissRestToast);
 
 // ── Finish ─────────────────────────────────────────────────────────────────
 function finishWorkout() {
@@ -518,7 +634,13 @@ function finishWorkout() {
   showPanel('done');
 }
 
-el.btnRestart.addEventListener('click', () => showPanel('config'));
+el.btnRestart.addEventListener('click', () => {
+  if (selectedRestSecs !== null) startRestToast(selectedRestSecs);
+  selectedRestSecs = null;
+  document.querySelectorAll('.rest-preset-btn').forEach(b => b.classList.remove('active'));
+  el.doneRestCustomWrap.classList.add('hidden');
+  showPanel('config');
+});
 
 // ── Status bar ─────────────────────────────────────────────────────────────
 function updateStatusBar() {
@@ -527,7 +649,7 @@ function updateStatusBar() {
   el.statusSerie.textContent = serieText;
   el.statusRep.textContent = isCurrentSeriFallo()
     ? `Rep ${state.rep}/∞`
-    : `Rep ${state.rep}/${cfg.totalReps}`;
+    : `Rep ${state.rep}/${getTotalReps()}`;
 }
 
 // ── Al fallo series UI ─────────────────────────────────────────────────────
@@ -591,10 +713,34 @@ el.toggleSuper.addEventListener('change', () => {
   el.pausaSingle.classList.toggle('hidden', on);
   el.pausaDual.classList.toggle('hidden', !on);
   updatePausaInput();
+  el.fasesDistintasGroup.classList.toggle('hidden', !on);
+  el.repsDistintasGroup.classList.toggle('hidden', !on);
+  if (!on) {
+    el.toggleFasesDistintas.checked = false;
+    el.phasesSet2.classList.add('hidden');
+    el.phasesEj1Label.classList.add('hidden');
+    el.toggleRepsDistintas.checked = false;
+    el.repsBGroup.classList.add('hidden');
+    el.repsALabel.classList.add('hidden');
+  }
   if (el.toggleFallo.checked) {
     falloSeriesSet.clear();
     updateFalloSeriesUI();
   }
+});
+
+// ── Toggle: Fases distintas ────────────────────────────────────────────────
+el.toggleFasesDistintas.addEventListener('change', () => {
+  const on = el.toggleFasesDistintas.checked;
+  el.phasesSet2.classList.toggle('hidden', !on);
+  el.phasesEj1Label.classList.toggle('hidden', !on);
+});
+
+// ── Toggle: Reps distintas ─────────────────────────────────────────────────
+el.toggleRepsDistintas.addEventListener('change', () => {
+  const on = el.toggleRepsDistintas.checked;
+  el.repsBGroup.classList.toggle('hidden', !on);
+  el.repsALabel.classList.toggle('hidden', !on);
 });
 
 // ── Num-series → refresh fallo buttons ────────────────────────────────────
@@ -618,6 +764,31 @@ el.togglePausa2.addEventListener('change', updatePausaInput);
 // ── Init disabled states ───────────────────────────────────────────────────
 el.superRest.style.opacity = '0.4';
 el.phasePausa.style.opacity = '0.4';
+
+// ── Rest presets (done panel) ──────────────────────────────────────────────
+document.querySelectorAll('.rest-preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const isActive = btn.classList.contains('active');
+    document.querySelectorAll('.rest-preset-btn').forEach(b => b.classList.remove('active'));
+    el.doneRestCustomWrap.classList.add('hidden');
+    if (isActive) {
+      selectedRestSecs = null;
+    } else {
+      btn.classList.add('active');
+      const sec = parseInt(btn.dataset.sec);
+      if (sec === 0) {
+        el.doneRestCustomWrap.classList.remove('hidden');
+        selectedRestSecs = parseInt(el.doneRestCustomInput.value) || 120;
+      } else {
+        selectedRestSecs = sec;
+      }
+    }
+  });
+});
+
+el.doneRestCustomInput.addEventListener('input', () => {
+  selectedRestSecs = parseInt(el.doneRestCustomInput.value) || null;
+});
 
 // ── Adaptive height (split-view detection) ────────────────────────────────
 function updateLayout() {

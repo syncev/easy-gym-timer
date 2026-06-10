@@ -150,6 +150,12 @@ h1 {
 
 /* Phases row */
 .phases-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+.phases-header { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 10px; }
+.phases-set { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.phases-ej-label { min-width: 30px; }
+.invert-wrap { display: flex; align-items: center; gap: 6px; }
+.fases-distintas-toggle { display: flex; align-items: center; gap: 8px; }
+.reps-b-group { display: flex; align-items: center; gap: 8px; }
 .phases { display: flex; gap: 14px; }
 .phase-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .phase-label {
@@ -425,6 +431,86 @@ h1 {
   width: 100%;
 }
 
+/* ========== REST TOAST ========== */
+#rest-toast {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(-110%);
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border-radius: 0 0 18px 18px;
+  padding: 12px 16px 10px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+  border: 1px solid #2a2a44;
+  border-top: none;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 1000;
+}
+
+#rest-toast.visible {
+  transform: translateX(-50%) translateY(0);
+}
+
+.rest-toast-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.rest-toast-info {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.rest-toast-label {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+#rest-toast-time {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: var(--blue);
+  line-height: 1;
+}
+
+#rest-toast-close {
+  background: var(--surface2);
+  border: none;
+  color: var(--text-dim);
+  font-size: 1rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+#rest-toast-close:active { background: #3a3a5a; }
+
+.rest-toast-bar-wrap {
+  height: 4px;
+  background: var(--surface2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+#rest-toast-bar {
+  height: 100%;
+  background: var(--blue);
+  border-radius: 4px;
+  width: 100%;
+}
+
 /* ========== DONE PANEL ========== */
 #done-panel {
   flex: 1;
@@ -474,6 +560,53 @@ h1 {
   font-size: 1.4rem;
   font-weight: 900;
   color: var(--green);
+}
+
+/* Done panel rest section */
+#done-rest {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.done-rest-title {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#done-rest-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.rest-preset-btn {
+  background: var(--surface2);
+  border: 2px solid #333355;
+  border-radius: 20px;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.rest-preset-btn.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #000;
+}
+
+#done-rest-custom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* ========== COMPACT MODE ==========
