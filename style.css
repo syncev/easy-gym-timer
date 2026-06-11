@@ -39,6 +39,32 @@ body {
 
 .hidden { display: none !important; }
 
+@keyframes configReveal {
+  from { opacity: 0; transform: scale(0.94) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+@keyframes configDismiss {
+  from { opacity: 1; transform: scale(1)    translateY(0); }
+  to   { opacity: 0; transform: scale(0.94) translateY(-4px); }
+}
+
+/* Entrance animation when config elements are revealed */
+#reps-b-group:not(.hidden),
+#reps-a-label:not(.hidden),
+#reps-distintas-group:not(.hidden),
+#fases-distintas-group:not(.hidden),
+#fallo-series-btns:not(.hidden),
+#phases-set-2:not(.hidden),
+#phases-ej1-label:not(.hidden) {
+  animation: configReveal 0.18s ease;
+}
+
+/* Exit animation — !important overrides specificity of :not(.hidden) rules */
+.is-hiding {
+  animation: configDismiss 0.15s ease forwards !important;
+  pointer-events: none;
+}
+
 /* ========== CONFIG PANEL ========== */
 #config-panel {
   flex: 1;
@@ -111,6 +137,7 @@ h1 {
 .num-input::-webkit-outer-spin-button { -webkit-appearance: none; }
 .num-input:focus { border-color: var(--green); }
 .num-input.small { width: 54px; height: 44px; font-size: 1.1rem; }
+#num-series, #num-reps, #num-reps-2 { width: 52px; }
 
 .unit {
   font-size: 0.9rem;
@@ -148,15 +175,28 @@ h1 {
 .toggle-wrap input:checked + .toggle-slider { background: var(--green); }
 .toggle-wrap input:checked + .toggle-slider::before { transform: translateX(24px); }
 
+/* Series + Reps row */
+.series-reps-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+.sr-inputs { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.sr-toggles { display: flex; align-items: flex-start; justify-content: space-evenly; width: 100%; }
+
 /* Phases row */
 .phases-row { flex-direction: column; align-items: flex-start; gap: 10px; }
 .phases-header { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 10px; }
-.phases-set { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.phases-set { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
 .phases-ej-label { min-width: 30px; }
 .invert-wrap { display: flex; align-items: center; gap: 6px; }
 .fases-distintas-toggle { display: flex; align-items: center; gap: 8px; }
 .reps-b-group { display: flex; align-items: center; gap: 8px; }
 .phases { display: flex; gap: 14px; }
+.phase-item[data-phase="conc"]  { order: 1; }
+.phase-item[data-phase="isom"]  { order: 2; }
+.phase-item[data-phase="excen"] { order: 3; }
+.phase-item[data-phase="pausa"] { order: 4; }
+.phases.inverted .phase-item[data-phase="excen"] { order: 1; }
+.phases.inverted .phase-item[data-phase="pausa"] { order: 2; }
+.phases.inverted .phase-item[data-phase="conc"]  { order: 3; }
+.phases.inverted .phase-item[data-phase="isom"]  { order: 4; }
 .phase-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .phase-label {
   font-size: 0.75rem;
@@ -167,6 +207,7 @@ h1 {
 .phase-label.conc  { color: var(--green); }
 .phase-label.isom  { color: var(--blue); }
 .phase-label.excen { color: var(--orange); }
+.phase-label.pausa { color: var(--gray); }
 
 /* Toggle + "Al fallo" label stacked vertically so they never split across lines */
 .fallo-toggle-group {
@@ -207,13 +248,6 @@ h1 {
   background: var(--green);
   border-color: var(--green);
   color: #000;
-}
-
-/* Pausa toggle section */
-.pausa-toggles {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 /* Buttons */
@@ -365,7 +399,7 @@ h1 {
   border: none;
   background: var(--surface);
   color: var(--text);
-  font-size: 1.8rem;
+  font-size: 2.6rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -374,8 +408,25 @@ h1 {
   transition: background 0.15s;
 }
 .btn-control:active { background: var(--surface2); }
-.btn-skip { font-size: 1.4rem; }
-.btn-skip span { font-size: 0.85rem; font-weight: 600; color: var(--text-dim); }
+
+/* Pill style shared by both pause buttons */
+#btn-play-pause,
+#btn-play-pause-rest {
+  background: var(--orange);
+  border-radius: 50px;
+  color: #000;
+}
+#btn-play-pause:active,
+#btn-play-pause-rest:active { background: var(--orange); filter: brightness(0.82); }
+
+/* Skip button — blue pill, same font size as pause */
+#btn-skip {
+  background: var(--blue);
+  border-radius: 50px;
+  color: #000;
+}
+#btn-skip:active { background: var(--blue); filter: brightness(0.82); }
+.btn-skip span { font-size: 0.75rem; font-weight: 600; color: #00000088; }
 
 /* ========== REST PANEL ========== */
 #rest-panel {
@@ -430,6 +481,16 @@ h1 {
   border-radius: 10px;
   width: 100%;
 }
+
+#rest-controls {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+}
+#rest-controls #btn-play-pause-rest { flex: 1; }
+#rest-controls .btn-primary { margin: 0; flex: 2; }
 
 /* ========== REST TOAST ========== */
 #rest-toast {
@@ -619,8 +680,11 @@ html.compact {
   & h1 { font-size: 1.4rem; margin-bottom: 10px; }
   & .config-grid { gap: 7px; }
   & .config-row { padding: 9px 14px; }
+  & .series-reps-row { gap: 5px; }
+  & .sr-toggles { gap: 0; }
   & .num-input { height: 40px; font-size: 1.1rem; width: 60px; }
   & .num-input.small { height: 36px; font-size: 0.95rem; width: 48px; }
+  & #num-series, & #num-reps, & #num-reps-2 { width: 46px; }
   & .btn-primary { padding: 13px; margin-top: 8px; font-size: 1.1rem; }
 
   /* ── Workout panel ── */
@@ -648,8 +712,8 @@ html.compact {
   & #fallo-count { font-size: 1.5rem; }
 
   & #controls { gap: 10px; margin-top: 4px; }
-  & .btn-control { height: 50px; font-size: 1.4rem; border-radius: 13px; }
-  & .btn-skip { font-size: 1.2rem; }
+  & .btn-control { height: 50px; font-size: 2.1rem; border-radius: 13px; }
+  & #btn-play-pause, & #btn-play-pause-rest, & #btn-skip { border-radius: 50px; }
   & .btn-skip span { font-size: 0.75rem; }
 
   /* ── Rest panel ── */

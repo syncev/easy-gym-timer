@@ -19,29 +19,33 @@
       <div class="config-grid">
 
         <!-- Series + Reps (merged card) -->
-        <div class="config-row">
-          <span class="config-label">Series</span>
-          <input type="number" id="num-series" min="1" max="20" value="4" class="num-input">
-          <span class="config-label">Reps</span>
-          <span id="reps-a-label" class="unit hidden">A</span>
-          <input type="number" id="num-reps" min="1" max="30" value="12" class="num-input">
-          <div id="reps-distintas-group" class="fallo-toggle-group hidden">
-            <label class="toggle-wrap">
-              <input type="checkbox" id="toggle-reps-distintas">
-              <span class="toggle-slider"></span>
-            </label>
-            <span class="unit">Reps dif.</span>
+        <div class="config-row series-reps-row">
+          <div class="sr-inputs">
+            <span class="config-label">Series</span>
+            <input type="number" id="num-series" min="1" max="20" value="4" class="num-input">
+            <span class="config-label">Reps</span>
+            <span id="reps-a-label" class="unit hidden">A</span>
+            <input type="number" id="num-reps" min="1" max="30" value="12" class="num-input">
+            <div id="reps-b-group" class="reps-b-group hidden">
+              <span class="unit">B</span>
+              <input type="number" id="num-reps-2" min="1" max="30" value="12" class="num-input">
+            </div>
           </div>
-          <div id="reps-b-group" class="reps-b-group hidden">
-            <span class="unit">B</span>
-            <input type="number" id="num-reps-2" min="1" max="30" value="12" class="num-input">
-          </div>
-          <div class="fallo-toggle-group">
-            <label class="toggle-wrap">
-              <input type="checkbox" id="toggle-fallo">
-              <span class="toggle-slider"></span>
-            </label>
-            <span class="unit">Al fallo</span>
+          <div class="sr-toggles">
+            <div class="fallo-toggle-group">
+              <label class="toggle-wrap">
+                <input type="checkbox" id="toggle-fallo">
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="unit">Al fallo</span>
+            </div>
+            <div id="reps-distintas-group" class="fallo-toggle-group hidden">
+              <label class="toggle-wrap">
+                <input type="checkbox" id="toggle-reps-distintas">
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="unit">Reps dif.</span>
+            </div>
           </div>
           <div id="fallo-series-btns" class="fallo-btns hidden"></div>
         </div>
@@ -54,7 +58,7 @@
             <span class="toggle-slider"></span>
           </label>
           <span class="unit">Descanso de:</span>
-          <input type="number" id="super-rest" min="1" max="60" value="10" class="num-input small" disabled>
+          <input type="number" id="super-rest" min="1" max="60" value="20" class="num-input small" disabled>
           <span class="unit">s</span>
         </div>
 
@@ -80,17 +84,21 @@
           <div class="phases-set" id="phases-set-1">
             <span id="phases-ej1-label" class="unit hidden">Ej. 1</span>
             <div class="phases">
-              <div class="phase-item">
-                <span class="phase-label conc">Contr.</span>
-                <input type="number" id="phase-conc" min="1" max="10" value="1" class="num-input small">
+              <div class="phase-item" data-phase="conc">
+                <span class="phase-label conc">Concen.</span>
+                <input type="number" id="phase-conc" min="0.5" max="10" step="0.5" value="1" class="num-input small">
               </div>
-              <div class="phase-item">
+              <div class="phase-item" data-phase="isom">
                 <span class="phase-label isom">Isom.</span>
-                <input type="number" id="phase-isom" min="0" max="10" value="1" class="num-input small">
+                <input type="number" id="phase-isom" min="0" max="10" step="0.5" value="1" class="num-input small">
               </div>
-              <div class="phase-item">
+              <div class="phase-item" data-phase="excen">
                 <span class="phase-label excen">Excen.</span>
-                <input type="number" id="phase-excen" min="1" max="10" value="3" class="num-input small">
+                <input type="number" id="phase-excen" min="0.5" max="10" step="0.5" value="3" class="num-input small">
+              </div>
+              <div class="phase-item" data-phase="pausa">
+                <span class="phase-label pausa">Pausa</span>
+                <input type="number" id="phase-pausa" min="0" max="10" step="0.5" value="1" class="num-input small">
               </div>
             </div>
             <div class="invert-wrap">
@@ -104,17 +112,21 @@
           <div class="phases-set hidden" id="phases-set-2">
             <span class="unit phases-ej-label">Ej. 2</span>
             <div class="phases">
-              <div class="phase-item">
-                <span class="phase-label conc">Contr.</span>
-                <input type="number" id="phase-conc-2" min="1" max="10" value="1" class="num-input small">
+              <div class="phase-item" data-phase="conc">
+                <span class="phase-label conc">Concen.</span>
+                <input type="number" id="phase-conc-2" min="0.5" max="10" step="0.5" value="1" class="num-input small">
               </div>
-              <div class="phase-item">
+              <div class="phase-item" data-phase="isom">
                 <span class="phase-label isom">Isom.</span>
-                <input type="number" id="phase-isom-2" min="0" max="10" value="1" class="num-input small">
+                <input type="number" id="phase-isom-2" min="0" max="10" step="0.5" value="1" class="num-input small">
               </div>
-              <div class="phase-item">
+              <div class="phase-item" data-phase="excen">
                 <span class="phase-label excen">Excen.</span>
-                <input type="number" id="phase-excen-2" min="1" max="10" value="3" class="num-input small">
+                <input type="number" id="phase-excen-2" min="0.5" max="10" step="0.5" value="3" class="num-input small">
+              </div>
+              <div class="phase-item" data-phase="pausa">
+                <span class="phase-label pausa">Pausa</span>
+                <input type="number" id="phase-pausa-2" min="0" max="10" step="0.5" value="1" class="num-input small">
               </div>
             </div>
             <div class="invert-wrap">
@@ -125,33 +137,6 @@
               <span class="unit">Invertir</span>
             </div>
           </div>
-        </div>
-
-        <!-- Pausa fase -->
-        <div class="config-row">
-          <span class="config-label">Pausa</span>
-          <!-- Shown when superserie OFF -->
-          <div id="pausa-single" class="pausa-toggles">
-            <label class="toggle-wrap">
-              <input type="checkbox" id="toggle-pausa">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <!-- Shown when superserie ON -->
-          <div id="pausa-dual" class="pausa-toggles hidden">
-            <span class="unit">Ej.1</span>
-            <label class="toggle-wrap">
-              <input type="checkbox" id="toggle-pausa-1">
-              <span class="toggle-slider"></span>
-            </label>
-            <span class="unit">Ej.2</span>
-            <label class="toggle-wrap">
-              <input type="checkbox" id="toggle-pausa-2">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <input type="number" id="phase-pausa" min="1" max="10" value="1" class="num-input small" disabled>
-          <span class="unit">s</span>
         </div>
 
       </div>
@@ -210,7 +195,10 @@
         <div id="rest-countdown">90</div>
         <div id="rest-bar-wrap"><div id="rest-bar"></div></div>
       </div>
-      <button id="btn-skip-rest" class="btn-primary">Saltar descanso</button>
+      <div id="rest-controls">
+        <button id="btn-play-pause-rest" class="btn-control">⏸</button>
+        <button id="btn-skip-rest" class="btn-primary">Saltar descanso</button>
+      </div>
     </div>
 
     <!-- DONE PANEL -->
@@ -222,7 +210,7 @@
         <div id="done-fallo-list"></div>
       </div>
       <div id="done-rest">
-        <div class="done-rest-title">Descanso antes de siguiente</div>
+        <div class="done-rest-title">Descansar antes de seguir (opcional)</div>
         <div id="done-rest-presets">
           <button class="rest-preset-btn" data-sec="90">90s</button>
           <button class="rest-preset-btn" data-sec="120">120s</button>

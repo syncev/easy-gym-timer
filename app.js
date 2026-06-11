@@ -21,8 +21,10 @@ function beepPhase()  { beep(660, 0.07, 0.25); }
 function beepRest()   { beep(440, 0.15, 0.3, 'triangle'); }
 function beepDone()   { beep(1046, 0.2, 0.4); setTimeout(() => beep(1318, 0.3, 0.4), 220); }
 
-// Rising pitch tick (count 5→1): 440→880 Hz
-function beepCountdownTick(count) { beep(440 + (5 - count) * 110, 0.09, 0.28); }
+// Rising pitch tick: flat low for counts >5, rising 440→880 for last 5
+function beepCountdownTick(count) {
+  beep(count > 5 ? 440 : 440 + (5 - count) * 110, 0.09, count > 5 ? 0.18 : 0.28);
+}
 // Ascending chord for "GO"
 function beepCountdownGo() {
   beep(1046, 0.12, 0.45);
@@ -31,6 +33,8 @@ function beepCountdownGo() {
 }
 // Grave tone for each second of the excentric phase
 function beepExcen() { beep(310, 0.13, 0.32, 'triangle'); }
+// Soft bell at 20s remaining
+function beepBell20() { beep(660, 0.7, 0.22, 'sine'); }
 // Single warm bell at 15s remaining
 function beepBell15() { beep(880, 0.8, 0.28, 'sine'); }
 // Two-note bell at 10s remaining (more urgent)
@@ -43,11 +47,10 @@ function beepHalfReps() {
   beep(784, 0.12, 0.25, 'sine');
   setTimeout(() => beep(1047, 0.18, 0.3, 'sine'), 160);
 }
-// Last rep: three-note ascending arpeggio
+// Last rep: two quick high pings (short, distinct from beepDone)
 function beepLastRep() {
-  beep(1047, 0.1, 0.28, 'sine');
-  setTimeout(() => beep(1319, 0.1, 0.28, 'sine'), 110);
-  setTimeout(() => beep(1568, 0.22, 0.35, 'sine'), 220);
+  beep(1760, 0.07, 0.3, 'sine');
+  setTimeout(() => beep(1760, 0.07, 0.3, 'sine'), 120);
 }
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
@@ -69,14 +72,11 @@ const el = {
   phaseIsom:       document.getElementById('phase-isom'),
   phaseExcen:      document.getElementById('phase-excen'),
   phasePausa:      document.getElementById('phase-pausa'),
-  togglePausa:     document.getElementById('toggle-pausa'),
-  togglePausa1:    document.getElementById('toggle-pausa-1'),
-  togglePausa2:    document.getElementById('toggle-pausa-2'),
-  pausaSingle:     document.getElementById('pausa-single'),
-  pausaDual:       document.getElementById('pausa-dual'),
+  phasePausa2:     document.getElementById('phase-pausa-2'),
   falloSeriesBtns: document.getElementById('fallo-series-btns'),
   btnStart:        document.getElementById('btn-start'),
-  btnPlayPause:    document.getElementById('btn-play-pause'),
+  btnPlayPause:     document.getElementById('btn-play-pause'),
+  btnPlayPauseRest: document.getElementById('btn-play-pause-rest'),
   btnSkip:         document.getElementById('btn-skip'),
   btnSkipRest:     document.getElementById('btn-skip-rest'),
   btnRestart:      document.getElementById('btn-restart'),
@@ -145,7 +145,7 @@ const PHASE_COLORS = {
 function setCircle(phase, progress) {
   let r;
   if      (phase === 'conc')  r = R_MAX * progress;
-  else if (phase === 'isom')  r = isInvertPhases() ? 0 : R_MAX;
+  else if (phase === 'isom')  r = R_MAX;
   else if (phase === 'excen') r = R_MAX * (1 - progress);
   else                        r = 0;
 
@@ -173,15 +173,31 @@ function showPanel(name) {
 // ── Pause helper ───────────────────────────────────────────────────────────
 function setPaused(val) {
   state.paused = val;
-  el.btnPlayPause.textContent = val ? '▶' : '⏸';
+  const icon = val ? '▶' : '⏸';
+  el.btnPlayPause.textContent = icon;
+  el.btnPlayPauseRest.textContent = icon;
+}
+
+function freezeRestBar() {
+  const currentWidth = getComputedStyle(el.restBar).width;
+  el.restBar.style.transition = 'none';
+  el.restBar.style.width = currentWidth;
+}
+
+function resumeRestBar() {
+  const rem = parseInt(el.restCountdown.textContent) || 0;
+  requestAnimationFrame(() => {
+    el.restBar.style.transition = `width ${rem}s linear`;
+    el.restBar.style.width = '0%';
+  });
 }
 
 // ── Countdown before workout ───────────────────────────────────────────────
 function startCountdown(onComplete) {
-  let count = 5;
+  let count = 10;
   el.statusPhase.textContent = 'Preparate...';
   const updateCircle = (c) => {
-    const r = R_MAX * ((5 - c) / 5);
+    const r = R_MAX * ((10 - c) / 10);
     el.circleFill.setAttribute('r', r.toFixed(1));
     el.circleFill.style.fill = '#888899';
     el.circleTrack.style.stroke = '#888899';
@@ -191,6 +207,7 @@ function startCountdown(onComplete) {
   beepCountdownTick(count);
 
   countdownTimer = setInterval(() => {
+    if (state.paused) return;
     count--;
     if (count > 0) {
       updateCircle(count);
@@ -232,20 +249,18 @@ function readConfig() {
     falloSeries:   new Set(falloSeriesSet),
     restSeries:    parseInt(el.restSeries.value)  || 90,
     superEnabled:  el.toggleSuper.checked,
-    superRest:     parseInt(el.superRest.value)   || 15,
-    phaseConc:     Math.max(1, parseInt(el.phaseConc.value)  || 1),
-    phaseIsom:     Math.max(0, parseInt(el.phaseIsom.value)  || 0),
-    phaseExcen:    Math.max(1, parseInt(el.phaseExcen.value) || 3),
-    phasePausa:    Math.max(1, parseInt(el.phasePausa.value) || 1),
-    pausaEnabled:   el.togglePausa.checked,
-    pausa1Enabled:  el.togglePausa1.checked,
-    pausa2Enabled:  el.togglePausa2.checked,
+    superRest:     parseInt(el.superRest.value)   || 20,
+    phaseConc:     Math.max(0.5, parseFloat(el.phaseConc.value)  || 1),
+    phaseIsom:     Math.max(0,   parseFloat(el.phaseIsom.value)  || 0),
+    phaseExcen:    Math.max(0.5, parseFloat(el.phaseExcen.value) || 3),
+    phasePausa:     Math.max(0,   parseFloat(el.phasePausa.value)  || 0),
+    phasePausa2:    Math.max(0,   parseFloat(el.phasePausa2.value) || 0),
     repsDistintas:  el.toggleRepsDistintas.checked,
     totalReps2:     parseInt(el.numReps2.value) || 10,
     fasesDistintas: el.toggleFasesDistintas.checked,
-    phaseConc2:     Math.max(1, parseInt(el.phaseConc2.value)  || 1),
-    phaseIsom2:     Math.max(0, parseInt(el.phaseIsom2.value)  || 0),
-    phaseExcen2:    Math.max(1, parseInt(el.phaseExcen2.value) || 3),
+    phaseConc2:     Math.max(0.5, parseFloat(el.phaseConc2.value)  || 1),
+    phaseIsom2:     Math.max(0,   parseFloat(el.phaseIsom2.value)  || 0),
+    phaseExcen2:    Math.max(0.5, parseFloat(el.phaseExcen2.value) || 3),
     invertPhases1:  el.toggleInvert1.checked,
     invertPhases2:  el.toggleInvert2.checked,
   };
@@ -291,26 +306,27 @@ function isInvertPhases() {
 }
 
 function isPausaEnabled() {
-  if (cfg.superEnabled) {
-    return state.superExercise === 1 ? cfg.pausa1Enabled : cfg.pausa2Enabled;
-  }
-  return cfg.pausaEnabled;
+  const useB = cfg.superEnabled && cfg.fasesDistintas && state.superExercise === 2;
+  return (useB ? cfg.phasePausa2 : cfg.phasePausa) > 0;
 }
 
 function getPhaseOrder() {
-  const useB = cfg.superEnabled && cfg.fasesDistintas && state.superExercise === 2;
-  const hasIsom = (useB ? cfg.phaseIsom2 : cfg.phaseIsom) > 0;
+  const useB     = cfg.superEnabled && cfg.fasesDistintas && state.superExercise === 2;
+  const hasIsom  = (useB ? cfg.phaseIsom2 : cfg.phaseIsom) > 0;
+  const hasPausa = isPausaEnabled();
   if (isInvertPhases()) {
+    // Excen. → Pausa → Concen. → Isom.  (Isom always follows Concen)
     const phases = ['excen'];
-    if (hasIsom) phases.push('isom');
+    if (hasPausa) phases.push('pausa');
     phases.push('conc');
-    if (isPausaEnabled()) phases.push('pausa');
+    if (hasIsom) phases.push('isom');
     return phases;
   }
+  // Concen. → Isom. → Excen. → Pausa
   const phases = ['conc'];
   if (hasIsom) phases.push('isom');
   phases.push('excen');
-  if (isPausaEnabled()) phases.push('pausa');
+  if (hasPausa) phases.push('pausa');
   return phases;
 }
 
@@ -320,7 +336,7 @@ function phaseDuration(ph) {
     conc:  useB ? cfg.phaseConc2  : cfg.phaseConc,
     isom:  useB ? cfg.phaseIsom2  : cfg.phaseIsom,
     excen: useB ? cfg.phaseExcen2 : cfg.phaseExcen,
-    pausa: cfg.phasePausa,
+    pausa: useB ? cfg.phasePausa2 : cfg.phasePausa,
   }[ph];
 }
 
@@ -570,14 +586,15 @@ el.btnSkipRest.addEventListener('click', () => {
 });
 
 // ── Play / Pause ───────────────────────────────────────────────────────────
-el.btnPlayPause.addEventListener('click', () => {
+function handlePlayPause() {
   setPaused(!state.paused);
-  if (!state.paused && (state.resting || state.superResting)) {
-    const rem = parseInt(el.restCountdown.textContent) || 0;
-    el.restBar.style.transition = `width ${rem}s linear`;
-    el.restBar.style.width = '0%';
+  if (state.resting || state.superResting) {
+    if (state.paused) freezeRestBar();
+    else resumeRestBar();
   }
-});
+}
+el.btnPlayPause.addEventListener('click', handlePlayPause);
+el.btnPlayPauseRest.addEventListener('click', handlePlayPause);
 
 // ── Rest-between-sessions toast ────────────────────────────────────────────
 function startRestToast(seconds) {
@@ -595,6 +612,9 @@ function startRestToast(seconds) {
   restAfterTicker = setInterval(() => {
     remaining--;
     el.restToastTime.textContent = Math.max(0, remaining);
+    if (remaining === 20) beepBell20();
+    if (remaining === 15) beepBell15();
+    if (remaining === 10) beepBell10();
     if (remaining >= 1 && remaining <= 5) beepCountdownTick(remaining);
     if (remaining <= 0) {
       clearInterval(restAfterTicker);
@@ -693,15 +713,50 @@ function createFalloBtn(label, key) {
   return btn;
 }
 
+// ── Animation helpers ──────────────────────────────────────────────────────
+function setVisible(element, show, onHidden) {
+  if (show) {
+    element.classList.remove('is-hiding', 'hidden');
+  } else {
+    if (element.classList.contains('hidden') || element.classList.contains('is-hiding')) return;
+    element.classList.add('is-hiding');
+    element.addEventListener('animationend', () => {
+      element.classList.remove('is-hiding');
+      element.classList.add('hidden');
+      if (onHidden) onHidden();
+    }, { once: true });
+  }
+}
+
+function flipReorder(phasesEl, applyFn) {
+  const items = Array.from(phasesEl.querySelectorAll('.phase-item'));
+  const before = items.map(item => item.getBoundingClientRect().left);
+  applyFn();
+  items.forEach((item, i) => {
+    const dx = before[i] - item.getBoundingClientRect().left;
+    if (Math.abs(dx) < 1) return;
+    item.style.transition = 'none';
+    item.style.transform = `translateX(${dx}px)`;
+  });
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    items.forEach(item => {
+      item.style.transition = 'transform 0.25s ease';
+      item.style.transform = '';
+    });
+  }));
+}
+
 // ── Toggle: Al fallo ───────────────────────────────────────────────────────
 el.toggleFallo.addEventListener('change', () => {
   const on = el.toggleFallo.checked;
-  el.falloSeriesBtns.classList.toggle('hidden', !on);
   if (on) {
     updateFalloSeriesUI();
+    setVisible(el.falloSeriesBtns, true);
   } else {
-    falloSeriesSet.clear();
-    el.falloSeriesBtns.innerHTML = '';
+    setVisible(el.falloSeriesBtns, false, () => {
+      falloSeriesSet.clear();
+      el.falloSeriesBtns.innerHTML = '';
+    });
   }
 });
 
@@ -710,18 +765,15 @@ el.toggleSuper.addEventListener('change', () => {
   const on = el.toggleSuper.checked;
   el.superRest.disabled = !on;
   el.superRest.style.opacity = on ? '1' : '0.4';
-  el.pausaSingle.classList.toggle('hidden', on);
-  el.pausaDual.classList.toggle('hidden', !on);
-  updatePausaInput();
-  el.fasesDistintasGroup.classList.toggle('hidden', !on);
-  el.repsDistintasGroup.classList.toggle('hidden', !on);
+  setVisible(el.fasesDistintasGroup, on);
+  setVisible(el.repsDistintasGroup, on);
   if (!on) {
     el.toggleFasesDistintas.checked = false;
-    el.phasesSet2.classList.add('hidden');
-    el.phasesEj1Label.classList.add('hidden');
+    setVisible(el.phasesSet2, false);
+    setVisible(el.phasesEj1Label, false);
     el.toggleRepsDistintas.checked = false;
-    el.repsBGroup.classList.add('hidden');
-    el.repsALabel.classList.add('hidden');
+    setVisible(el.repsBGroup, false);
+    setVisible(el.repsALabel, false);
   }
   if (el.toggleFallo.checked) {
     falloSeriesSet.clear();
@@ -729,18 +781,28 @@ el.toggleSuper.addEventListener('change', () => {
   }
 });
 
+// ── Toggle: Invertir fases (FLIP animation) ───────────────────────────────
+el.toggleInvert1.addEventListener('change', () => {
+  const phases = document.querySelector('#phases-set-1 .phases');
+  flipReorder(phases, () => phases.classList.toggle('inverted', el.toggleInvert1.checked));
+});
+el.toggleInvert2.addEventListener('change', () => {
+  const phases = document.querySelector('#phases-set-2 .phases');
+  flipReorder(phases, () => phases.classList.toggle('inverted', el.toggleInvert2.checked));
+});
+
 // ── Toggle: Fases distintas ────────────────────────────────────────────────
 el.toggleFasesDistintas.addEventListener('change', () => {
   const on = el.toggleFasesDistintas.checked;
-  el.phasesSet2.classList.toggle('hidden', !on);
-  el.phasesEj1Label.classList.toggle('hidden', !on);
+  setVisible(el.phasesSet2, on);
+  setVisible(el.phasesEj1Label, on);
 });
 
 // ── Toggle: Reps distintas ─────────────────────────────────────────────────
 el.toggleRepsDistintas.addEventListener('change', () => {
   const on = el.toggleRepsDistintas.checked;
-  el.repsBGroup.classList.toggle('hidden', !on);
-  el.repsALabel.classList.toggle('hidden', !on);
+  setVisible(el.repsBGroup, on);
+  setVisible(el.repsALabel, on);
 });
 
 // ── Num-series → refresh fallo buttons ────────────────────────────────────
@@ -748,22 +810,8 @@ el.numSeries.addEventListener('input', () => {
   if (el.toggleFallo.checked) updateFalloSeriesUI();
 });
 
-// ── Toggle: Pausa ─────────────────────────────────────────────────────────
-function updatePausaInput() {
-  const active = el.toggleSuper.checked
-    ? el.togglePausa1.checked || el.togglePausa2.checked
-    : el.togglePausa.checked;
-  el.phasePausa.disabled = !active;
-  el.phasePausa.style.opacity = active ? '1' : '0.4';
-}
-
-el.togglePausa.addEventListener('change', updatePausaInput);
-el.togglePausa1.addEventListener('change', updatePausaInput);
-el.togglePausa2.addEventListener('change', updatePausaInput);
-
 // ── Init disabled states ───────────────────────────────────────────────────
 el.superRest.style.opacity = '0.4';
-el.phasePausa.style.opacity = '0.4';
 
 // ── Rest presets (done panel) ──────────────────────────────────────────────
 document.querySelectorAll('.rest-preset-btn').forEach(btn => {
