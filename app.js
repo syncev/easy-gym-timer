@@ -131,6 +131,9 @@ const el = {
   btnExportExercises:   document.getElementById('btn-export-exercises'),
   btnImportExercises:   document.getElementById('btn-import-exercises'),
   importExercisesInput: document.getElementById('import-exercises-input'),
+  btnMergeExercises:    document.getElementById('btn-merge-exercises'),
+  btnMergeCancel:       document.getElementById('btn-merge-cancel'),
+  btnMergeConfirm:      document.getElementById('btn-merge-confirm'),
   saveExerciseModal:    document.getElementById('save-exercise-modal'),
   saveExerciseBackdrop: document.getElementById('save-exercise-backdrop'),
   saveExerciseNameInput: document.getElementById('save-exercise-name-input'),
@@ -274,6 +277,10 @@ let previewingExerciseId = null;
 // True while the real, editable Series module has been moved into the
 // preview screen (Editar tapped from there) instead of living in #config-panel
 let inlineEditFromPreview = false;
+
+// Merge-two-exercises-into-a-superserie selection mode
+let mergeSelectMode = false;
+let mergeSelection = []; // up to 2 exercise ids
 
 // Which saved exercise the currently running (or just-finished) workout came
 // from, if any — set by startWorkout(), read once by finishWorkout() to
@@ -1234,16 +1241,23 @@ function createWeightInput(label, key) {
 }
 
 // ── Exercises list ──────────────────────────────────────────────────────────
+function isSuperExercise(exercise) {
+  return exercise.nameA !== undefined && exercise.nameB !== undefined;
+}
+
 function renderExercisesList() {
   el.exercisesList.innerHTML = '';
   el.exercisesEmpty.classList.toggle('hidden', exercises.length > 0);
-  exercises.forEach(exercise => el.exercisesList.appendChild(createExerciseItem(exercise)));
+  exercises.forEach(exercise => {
+    el.exercisesList.appendChild(mergeSelectMode ? createMergeSelectItem(exercise) : createExerciseItem(exercise));
+  });
 }
 
 function createExerciseItem(exercise) {
   const item = document.createElement('div');
   item.className = 'exercise-item';
   item.dataset.id = exercise.id;
+  const isSuper = isSuperExercise(exercise);
 
   const handle = document.createElement('div');
   handle.className = 'exercise-drag-handle';
@@ -1252,7 +1266,7 @@ function createExerciseItem(exercise) {
 
   const nameCol = document.createElement('div');
   nameCol.className = 'exercise-name-col';
-  if (exercise.nameA !== undefined && exercise.nameB !== undefined) {
+  if (isSuper) {
     nameCol.appendChild(createExerciseNameLine(exercise.nameA));
     nameCol.appendChild(createExerciseNameLine(exercise.nameB));
   } else {
@@ -1277,8 +1291,225 @@ function createExerciseItem(exercise) {
     panels.config.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
-  item.append(handle, nameCol, playBtn, editBtn);
+  item.append(handle, nameCol);
+
+  if (isSuper) {
+    const splitBtn = document.createElement('button');
+    splitBtn.className = 'exercise-btn exercise-btn-split';
+    splitBtn.textContent = '🔀';
+    splitBtn.title = 'Separar en dos ejercicios';
+    splitBtn.addEventListener('click', () => {
+      if (confirm(`¿Separar "${exercise.name}" en dos ejercicios individuales?`)) {
+        splitExercise(exercise.id);
+      }
+    });
+    item.appendChild(splitBtn);
+  }
+
+  item.append(editBtn, playBtn);
   return item;
+}
+
+// Rendered instead of createExerciseItem() while merge-select mode is active —
+// only non-super exercises can be picked (superserie ones show dimmed).
+function createMergeSelectItem(exercise) {
+  const item = document.createElement('div');
+  item.className = 'exercise-item';
+  item.dataset.id = exercise.id;
+  const isSuper = isSuperExercise(exercise);
+
+  const nameCol = document.createElement('div');
+  nameCol.className = 'exercise-name-col';
+  if (isSuper) {
+    nameCol.appendChild(createExerciseNameLine(exercise.nameA));
+    nameCol.appendChild(createExerciseNameLine(exercise.nameB));
+  } else {
+    nameCol.appendChild(createExerciseNameLine(exercise.name));
+  }
+
+  const check = document.createElement('span');
+  check.className = 'exercise-merge-check';
+  check.textContent = mergeSelection.includes(exercise.id) ? '✓' : '';
+
+  item.append(nameCol, check);
+
+  if (isSuper) {
+    item.classList.add('merge-disabled');
+  } else {
+    item.classList.add('merge-selectable');
+    if (mergeSelection.includes(exercise.id)) item.classList.add('merge-selected');
+    item.addEventListener('click', () => toggleMergeSelection(exercise.id));
+  }
+
+  return item;
+}
+
+// ── Merge two exercises into one superserie ─────────────────────────────────
+function enterMergeSelectMode() {
+  mergeSelectMode = true;
+  mergeSelection = [];
+  el.btnMergeExercises.classList.add('hidden');
+  el.btnMergeCancel.classList.remove('hidden');
+  el.btnMergeConfirm.classList.remove('hidden');
+  el.btnMergeConfirm.disabled = true;
+  renderExercisesList();
+}
+
+function exitMergeSelectMode() {
+  mergeSelectMode = false;
+  mergeSelection = [];
+  el.btnMergeExercises.classList.remove('hidden');
+  el.btnMergeCancel.classList.add('hidden');
+  el.btnMergeConfirm.classList.add('hidden');
+  renderExercisesList();
+}
+
+function toggleMergeSelection(id) {
+  const idx = mergeSelection.indexOf(id);
+  if (idx !== -1) {
+    mergeSelection.splice(idx, 1);
+  } else {
+    if (mergeSelection.length >= 2) return; // deselect one first
+    mergeSelection.push(id);
+  }
+  el.btnMergeConfirm.disabled = mergeSelection.length !== 2;
+  renderExercisesList();
+}
+
+el.btnMergeExercises.addEventListener('click', enterMergeSelectMode);
+el.btnMergeCancel.addEventListener('click', exitMergeSelectMode);
+el.btnMergeConfirm.addEventListener('click', () => {
+  if (mergeSelection.length === 2) mergeExercises(mergeSelection[0], mergeSelection[1]);
+});
+
+const DEFAULT_SUPER_REST = 20;   // matches #super-rest's HTML default
+const DEFAULT_REST_SERIES = 120; // matches #rest-series's HTML default
+
+// Combines two standalone exercises (selection order → A, B) into one
+// superserie exercise. Series/reps/phases/weights/al-fallo/intensity each
+// carry over to their own A or B slot; short rest and descanso interseries
+// reset to the standard defaults since neither source value applies anymore.
+function mergeExercises(idA, idB) {
+  const idxA = exercises.findIndex(e => e.id === idA);
+  const idxB = exercises.findIndex(e => e.id === idB);
+  if (idxA === -1 || idxB === -1) { exitMergeSelectMode(); return; }
+  const exA = exercises[idxA];
+  const exB = exercises[idxB];
+  const cfgA = exA.config;
+  const cfgB = exB.config;
+
+  const weights = {};
+  Object.entries(cfgA.weights || {}).forEach(([k, v]) => { weights[`${k}-1`] = v; });
+  Object.entries(cfgB.weights || {}).forEach(([k, v]) => { weights[`${k}-2`] = v; });
+
+  const falloSeries = [
+    ...(cfgA.falloSeries || []).map(k => `${k}-1`),
+    ...(cfgB.falloSeries || []).map(k => `${k}-2`),
+  ];
+
+  const samePhases = cfgA.phaseConc === cfgB.phaseConc && cfgA.phaseIsom === cfgB.phaseIsom &&
+    cfgA.phaseExcen === cfgB.phaseExcen && cfgA.phasePausa === cfgB.phasePausa &&
+    cfgA.invertPhases1 === cfgB.invertPhases1;
+
+  const mergedConfig = {
+    totalSeries: Math.max(cfgA.totalSeries, cfgB.totalSeries),
+    totalReps: cfgA.totalReps,
+    totalReps2: cfgB.totalReps,
+    repsDistintas: cfgA.totalReps !== cfgB.totalReps,
+    falloSeries,
+    weights,
+    restSeries: DEFAULT_REST_SERIES,
+    superEnabled: true,
+    superRest: DEFAULT_SUPER_REST,
+    phaseConc: cfgA.phaseConc,
+    phaseIsom: cfgA.phaseIsom,
+    phaseExcen: cfgA.phaseExcen,
+    phasePausa: cfgA.phasePausa,
+    phasePausa2: cfgB.phasePausa,
+    fasesDistintas: !samePhases,
+    phaseConc2: cfgB.phaseConc,
+    phaseIsom2: cfgB.phaseIsom,
+    phaseExcen2: cfgB.phaseExcen,
+    invertPhases1: cfgA.invertPhases1,
+    invertPhases2: cfgB.invertPhases1,
+  };
+
+  const merged = {
+    id: makeExerciseId(),
+    name: `${exA.name} / ${exB.name}`,
+    nameA: exA.name,
+    nameB: exB.name,
+    config: mergedConfig,
+  };
+  if (exA.intensityLog && exA.intensityLog.length) merged.intensityLogA = exA.intensityLog;
+  if (exB.intensityLog && exB.intensityLog.length) merged.intensityLogB = exB.intensityLog;
+
+  // Replace both originals with the merged entry, at the earliest position
+  const insertAt = Math.min(idxA, idxB);
+  exercises = exercises.filter(e => e.id !== idA && e.id !== idB);
+  exercises.splice(insertAt, 0, merged);
+
+  saveExercises();
+  exitMergeSelectMode(); // also re-renders the list
+}
+
+// Inverse of mergeExercises() — breaks a superserie exercise back into two
+// standalone ones, carrying each side's series/reps/phases/weights/al-fallo/
+// intensity back to its own exercise.
+function splitExercise(id) {
+  const idx = exercises.findIndex(e => e.id === id);
+  if (idx === -1) return;
+  const ex = exercises[idx];
+  const cfg = ex.config;
+
+  function remapWeights(suffix) {
+    const out = {};
+    Object.entries(cfg.weights || {}).forEach(([k, v]) => {
+      if (k.endsWith(suffix)) out[k.slice(0, -suffix.length)] = v;
+    });
+    return out;
+  }
+  function remapFallo(suffix) {
+    return (cfg.falloSeries || [])
+      .filter(k => k.endsWith(suffix))
+      .map(k => k.slice(0, -suffix.length));
+  }
+  function baseConfig(totalReps, phaseConc, phaseIsom, phaseExcen, phasePausa, invertPhases1, weightSuffix, falloSuffix) {
+    return {
+      totalSeries: cfg.totalSeries,
+      totalReps,
+      falloSeries: remapFallo(falloSuffix),
+      weights: remapWeights(weightSuffix),
+      restSeries: cfg.restSeries,
+      superEnabled: false,
+      superRest: DEFAULT_SUPER_REST,
+      phaseConc, phaseIsom, phaseExcen, phasePausa,
+      phasePausa2: 0,
+      repsDistintas: false,
+      totalReps2: 10,
+      fasesDistintas: false,
+      phaseConc2: 1, phaseIsom2: 1, phaseExcen2: 3,
+      invertPhases1, invertPhases2: false,
+    };
+  }
+
+  const exerciseA = {
+    id: makeExerciseId(),
+    name: ex.nameA ?? ex.name ?? '',
+    config: baseConfig(cfg.totalReps, cfg.phaseConc, cfg.phaseIsom, cfg.phaseExcen, cfg.phasePausa, cfg.invertPhases1, '-1', '-1'),
+  };
+  if (ex.intensityLogA && ex.intensityLogA.length) exerciseA.intensityLog = ex.intensityLogA;
+
+  const exerciseB = {
+    id: makeExerciseId(),
+    name: ex.nameB ?? '',
+    config: baseConfig(cfg.totalReps2, cfg.phaseConc2, cfg.phaseIsom2, cfg.phaseExcen2, cfg.phasePausa2, cfg.invertPhases2, '-2', '-2'),
+  };
+  if (ex.intensityLogB && ex.intensityLogB.length) exerciseB.intensityLog = ex.intensityLogB;
+
+  exercises.splice(idx, 1, exerciseA, exerciseB);
+  saveExercises();
+  renderExercisesList();
 }
 
 function createExerciseNameLine(text) {

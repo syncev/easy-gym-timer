@@ -1071,7 +1071,7 @@ h1 {
   text-align: center;
 }
 
-.exercises-backup-btns {
+.exercises-backup-btns, .exercises-merge-controls {
   display: flex;
   gap: 6px;
   flex-shrink: 0;
@@ -1092,6 +1092,42 @@ h1 {
   transition: background 0.15s;
 }
 .exercises-backup-btn:active { background: #3a3a5a; }
+.exercises-backup-btn:disabled {
+  color: var(--text-dim);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Merge-selection mode */
+.exercise-item.merge-selectable { cursor: pointer; }
+.exercise-item.merge-selected {
+  background: rgba(179, 136, 255, 0.15);
+  border-radius: 10px;
+  outline: 2px solid var(--violet);
+}
+.exercise-item.merge-disabled {
+  opacity: 0.4;
+}
+
+.exercise-merge-check {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #333355;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #000;
+}
+.exercise-item.merge-selected .exercise-merge-check {
+  background: var(--violet);
+  border-color: var(--violet);
+}
+
+.exercise-btn-split { color: var(--orange); }
 
 .exercises-empty {
   color: var(--text-dim);
