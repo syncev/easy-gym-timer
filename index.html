@@ -403,10 +403,29 @@
     </div>
   </div>
 
+  <!-- App-update banner (new version installed while the app was open) -->
+  <div id="update-toast" class="hidden">
+    <span id="update-toast-text">Nueva versión disponible</span>
+    <button id="update-toast-btn">Actualizar</button>
+    <button id="update-toast-close">✕</button>
+  </div>
+
   <script src="app.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js');
+      // Only a genuine update (not the very first install) should offer a reload.
+      const hadController = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker.register('./sw.js').then(reg => {
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (!newWorker || !hadController) return;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'activated') {
+              window.dispatchEvent(new CustomEvent('sw-update-ready'));
+            }
+          });
+        });
+      });
     }
   </script>
 </body>

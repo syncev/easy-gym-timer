@@ -835,6 +835,65 @@ h1 {
   width: 100%;
 }
 
+/* ========== UPDATE TOAST (new app version installed) ========== */
+#update-toast {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(110%);
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border-radius: 18px 18px 0 0;
+  padding: 12px 14px;
+  box-shadow: 0 -6px 24px rgba(0,0,0,0.5);
+  border: 1px solid var(--violet);
+  border-bottom: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 2000;
+}
+#update-toast.visible {
+  transform: translateX(-50%) translateY(0);
+}
+
+#update-toast-text {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+#update-toast-btn {
+  background: var(--violet);
+  border: none;
+  color: #000;
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 9px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+#update-toast-btn:active { opacity: 0.8; }
+
+#update-toast-close {
+  background: var(--surface2);
+  border: none;
+  color: var(--text-dim);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#update-toast-close:active { background: #3a3a5a; }
+
 /* ========== DONE PANEL ========== */
 #done-panel {
   flex: 1;

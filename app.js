@@ -2141,3 +2141,24 @@ updateLayout();
 renderExercisesList();
 updateWeightsUI();
 updateEditingUI();
+
+// ── App-update banner ───────────────────────────────────────────────────────
+// index.html's inline script dispatches this once a genuinely new service
+// worker version has activated (not on first install). Reload is entirely
+// user-triggered, so it never interrupts a workout in progress.
+const updateToast = document.getElementById('update-toast');
+const updateToastBtn = document.getElementById('update-toast-btn');
+const updateToastClose = document.getElementById('update-toast-close');
+
+window.addEventListener('sw-update-ready', () => {
+  updateToast.classList.remove('hidden');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    updateToast.classList.add('visible');
+  }));
+});
+
+updateToastBtn.addEventListener('click', () => window.location.reload());
+updateToastClose.addEventListener('click', () => {
+  updateToast.classList.remove('visible');
+  setTimeout(() => updateToast.classList.add('hidden'), 400);
+});
