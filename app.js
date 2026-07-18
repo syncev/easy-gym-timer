@@ -2063,13 +2063,10 @@ function confirmSaveExercise() {
 
   const config = serializeCurrentConfig();
   const entry = superOn ? { name, nameA, nameB, config } : { name, config };
-  const existingIndex = editingExerciseId ? exercises.findIndex(e => e.id === editingExerciseId) : -1;
-  if (existingIndex !== -1) {
-    exercises[existingIndex] = { id: editingExerciseId, ...entry };
-  } else {
-    editingExerciseId = makeExerciseId();
-    exercises.push({ id: editingExerciseId, ...entry });
-  }
+  // Only reached while NOT editing (see btnSaveExercise listener below), so
+  // every confirm here creates a brand-new exercise — never overwrites.
+  exercises.push({ id: makeExerciseId(), ...entry });
+  editingExerciseId = null;
   saveExercises();
   renderExercisesList();
   closeSaveExerciseModal();
