@@ -1092,6 +1092,16 @@ h1 {
   transition: background 0.15s;
 }
 .exercises-backup-btn:active { background: #3a3a5a; }
+
+/* Inline SVGs from the Glyphs Poly icon set (icon-sets.iconify.design/glyphs-poly) —
+   fills forced to currentColor so they tint like the rest of the icon buttons */
+.icon-svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  display: block;
+}
+
 .exercises-backup-btn:disabled {
   color: var(--text-dim);
   opacity: 0.5;
