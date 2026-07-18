@@ -341,11 +341,22 @@ function showPanel(name) {
 }
 
 // ── Pause helper ───────────────────────────────────────────────────────────
+const ICON_PLAY_SVG = '<svg class="icon-svg icon-svg-xl" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" stroke="currentColor" stroke-linecap="square" stroke-linejoin="round" stroke-width="4" d="M57.961 38.264c1.344.767 1.344 2.705 0 3.472L21.992 62.29c-1.333.762-2.992-.2-2.992-1.736V19.446c0-1.535 1.659-2.498 2.992-1.736z"/></svg>';
+const ICON_PAUSE_SVG = '<svg class="icon-svg icon-svg-xl" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="currentColor"><path fill-rule="evenodd" d="M36 24v-4a4 4 0 0 0-4-4h-8a4 4 0 0 0-4 4v40a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4zm24 0v-4a4 4 0 0 0-4-4h-8a4 4 0 0 0-4 4v40a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4z" clip-rule="evenodd"/><path d="M36 24h2zm0 32h2zm8-32h2zm0 32h-2zM34 20v4h4v-4zm-10-2h8v-4h-8zm-2 6v-4h-4v4zm0 32V24h-4v32zm0 4v-4h-4v4zm10 2h-8v4h8zm2-6v4h4v-4zm0-32v32h4V24zm24-4v4h4v-4zm-10-2h8v-4h-8zm-2 6v-4h-4v4zm0 32V24h-4v32zm0 4v-4h-4v4zm10 2h-8v4h8zm2-6v4h4v-4zm0-32v32h4V24zm-2 42a6 6 0 0 0 6-6h-4a2 2 0 0 1-2 2zm-8-52a6 6 0 0 0-6 6h4a2 2 0 0 1 2-2zm14 6a6 6 0 0 0-6-6v4a2 2 0 0 1 2 2zM32 66a6 6 0 0 0 6-6h-4a2 2 0 0 1-2 2zm10-6a6 6 0 0 0 6 6v-4a2 2 0 0 1-2-2zM24 14a6 6 0 0 0-6 6h4a2 2 0 0 1 2-2zm-6 46a6 6 0 0 0 6 6v-4a2 2 0 0 1-2-2zm20-40a6 6 0 0 0-6-6v4a2 2 0 0 1 2 2z"/></g></svg>';
+const ICON_PLAY_SMALL_SVG = '<svg class="icon-svg icon-svg-md" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" stroke="currentColor" stroke-linecap="square" stroke-linejoin="round" stroke-width="4" d="M57.961 38.264c1.344.767 1.344 2.705 0 3.472L21.992 62.29c-1.333.762-2.992-.2-2.992-1.736V19.446c0-1.535 1.659-2.498 2.992-1.736z"/></svg>';
+const ICON_PENCIL_SVG = '<svg class="icon-svg icon-svg-md" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none"><path fill="currentColor" fill-rule="evenodd" d="M32.113 68.113a8 8 0 0 0 16 0V19.725a16 16 0 0 0-3.506-9.995l-2.894-3.617l-.8-1a1.025 1.025 0 0 0-1.6 0l-.8 1L35.62 9.73a16 16 0 0 0-3.506 9.995z" clip-rule="evenodd"/><path fill="currentColor" fill-rule="evenodd" d="m32.113 20.235l2.23 2.23a2.5 2.5 0 0 0 3.536 0l2.23-2.23l2.23 2.23a2.5 2.5 0 0 0 3.536 0l-1.061-1.06l1.06 1.06l2.24-2.24v-.5c0-1.041-.102-2.074-.3-3.084a1.5 1.5 0 0 0-.77.411l-2.937 2.939l-2.23-2.231a2.5 2.5 0 0 0-3.537 0l-2.229 2.23l-2.937-2.938a1.5 1.5 0 0 0-.761-.41c-.198 1.01-.3 2.042-.3 3.083z" clip-rule="evenodd"/><path fill="currentColor" fill-rule="evenodd" d="m35.316 10.11l3.197-3.997l.8-1l.8-1l.8 1l.8 1l3.198 3.997z" clip-rule="evenodd"/><path stroke="currentColor" stroke-width="4" d="M48.105 60.113h-15.99"/></g></svg>';
+const ICON_SPLIT_SVG = '<svg class="icon-svg icon-svg-md" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none"><path fill="currentColor" d="M62.518 31.231a2 2 0 1 0 0-4zM38 68.001a2 2 0 0 0 4 0zm24.518-40.77H61v4h1.518zM38 50.231v17.77h4V50.23zm23-23c-12.702 0-23 10.298-23 23h4c0-10.493 8.507-19 19-19z"/><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M62.519 41.545V16.917c0-1.307 1.74-1.754 2.37-.61l6.514 11.84a2.25 2.25 0 0 1 0 2.169L64.89 42.154c-.63 1.144-2.37.697-2.37-.61"/><path fill="currentColor" d="M17.482 31.231a2 2 0 1 1 0-4zM42 68.001a2 2 0 0 1-4 0zM17.482 27.23H19v4h-1.518zM42 50.23V68h-4V50.23zm-23-23c12.703 0 23 10.298 23 23h-4c0-10.493-8.507-19-19-19z"/><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M17.482 41.545V16.917c0-1.307-1.741-1.754-2.37-.61l-6.515 11.84a2.25 2.25 0 0 0 0 2.169l6.514 11.838c.63 1.144 2.37.697 2.37-.61"/></g></svg>';
+const ICON_CHECK_SVG = '<svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="m14.121 40.092l15.557 15.556a2 2 0 0 0 2.828 0l32.527-32.527"/></svg>';
+const ICON_PAUSE_LABEL_SVG = '<svg class="icon-svg icon-svg-label" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="currentColor"><path fill-rule="evenodd" d="M36 24v-4a4 4 0 0 0-4-4h-8a4 4 0 0 0-4 4v40a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4zm24 0v-4a4 4 0 0 0-4-4h-8a4 4 0 0 0-4 4v40a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4z" clip-rule="evenodd"/></g></svg>';
+const ICON_HASH_LABEL_SVG = '<svg class="icon-svg icon-svg-label" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path stroke="currentColor" d="m28 64l7.636-48"/><path stroke="currentColor" d="M44.364 64L52 16"/><path stroke="currentColor" d="M19.692 31.429H64"/><path stroke="currentColor" d="M16 48.571h44.308"/></g></svg>';
+const ICON_REPEAT_LABEL_SVG = '<svg class="icon-svg icon-svg-label" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none"><path fill="currentColor" d="M48.5 24.002a2 2 0 0 0 0-4zM13.836 51.706a2 2 0 0 0 3.3-2.26zM17.5 27.002l1.414 1.414zm12.071-3H48.5v-4H29.571zM14.5 40.931v-1.858h-4v1.858zm-4 0c0 3.873 1.178 7.625 3.336 10.775l3.3-2.26a15.07 15.07 0 0 1-2.636-8.515zm19.071-20.929c-5.058 0-9.909 2.01-13.485 5.586l2.828 2.828a15.07 15.07 0 0 1 10.657-4.414zm-13.485 5.586A19.07 19.07 0 0 0 10.5 39.073h4a15.07 15.07 0 0 1 4.414-10.657z"/><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M48.5 29.76V14.244c0-1.566 1.893-2.35 3-1.243l7.409 7.409a2.25 2.25 0 0 1 0 3.182l-7.409 7.41c-1.107 1.107-3 .323-3-1.243"/><path fill="currentColor" d="M31.5 56.002a2 2 0 1 0 0 4zm34.664-27.704a2 2 0 1 0-3.3 2.26zM62.5 53.002l-1.414-1.414zm-12.071 3H31.5v4h18.929zM65.5 39.073v1.858h4v-1.858zm4 0a19.07 19.07 0 0 0-3.336-10.775l-3.3 2.26a15.07 15.07 0 0 1 2.636 8.515zM50.429 60.002c5.058 0 9.909-2.01 13.485-5.586l-2.828-2.828a15.07 15.07 0 0 1-10.657 4.414zm13.485-5.586A19.07 19.07 0 0 0 69.5 40.931h-4a15.07 15.07 0 0 1-4.414 10.657z"/><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M31.5 50.245v15.514c0 1.566-1.893 2.35-3 1.243l-7.409-7.41a2.25 2.25 0 0 1 0-3.181l7.409-7.409c1.107-1.107 3-.323 3 1.243"/></g></svg>';
+const ICON_BOLT_LABEL_SVG = '<svg class="icon-svg icon-svg-label" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none"><path fill="currentColor" fill-rule="evenodd" d="M33.999 45.83H20.002a1 1 0 0 1-.82-1.574l25.08-35.828c.56-.8 1.82-.404 1.82.574V33.83h13.996a1 1 0 0 1 .82 1.573l-25.08 35.828c-.56.8-1.819.404-1.819-.574z" clip-rule="evenodd"/><path fill="currentColor" d="M33.999 46.001L46.17 33.83h-.089V9.002c0-.978-1.259-1.375-1.82-.574L19.184 44.256a1 1 0 0 0 .819 1.574H34z"/></g></svg>';
+
 function setPaused(val) {
   state.paused = val;
-  const icon = val ? '▶' : '⏸';
-  el.btnPlayPause.textContent = icon;
-  el.btnPlayPauseRest.textContent = icon;
+  const icon = val ? ICON_PLAY_SVG : ICON_PAUSE_SVG;
+  el.btnPlayPause.innerHTML = icon;
+  el.btnPlayPauseRest.innerHTML = icon;
 }
 
 function freezeRestBar() {
@@ -1130,7 +1141,7 @@ function confirmIntensity() {
   });
 
   saveExercises();
-  el.intensitySections.innerHTML = '<div class="intensity-saved-msg">✓ Intensidad guardada</div>';
+  el.intensitySections.innerHTML = `<div class="intensity-saved-msg">${ICON_CHECK_SVG} Intensidad guardada</div>`;
   el.intensityConfirm.classList.add('hidden');
 }
 
@@ -1275,14 +1286,14 @@ function createExerciseItem(exercise) {
 
   const playBtn = document.createElement('button');
   playBtn.className = 'exercise-btn exercise-btn-play';
-  playBtn.textContent = '▶';
+  playBtn.innerHTML = ICON_PLAY_SMALL_SVG;
   playBtn.addEventListener('click', () => {
     showExercisePreview(exercise);
   });
 
   const editBtn = document.createElement('button');
   editBtn.className = 'exercise-btn exercise-btn-edit';
-  editBtn.textContent = '✎';
+  editBtn.innerHTML = ICON_PENCIL_SVG;
   editBtn.addEventListener('click', () => {
     applyConfigToForm(exercise.config);
     editingExerciseId = exercise.id;
@@ -1296,7 +1307,7 @@ function createExerciseItem(exercise) {
   if (isSuper) {
     const splitBtn = document.createElement('button');
     splitBtn.className = 'exercise-btn exercise-btn-split';
-    splitBtn.textContent = '🔀';
+    splitBtn.innerHTML = ICON_SPLIT_SVG;
     splitBtn.title = 'Separar en dos ejercicios';
     splitBtn.addEventListener('click', () => {
       if (confirm(`¿Separar "${exercise.name}" en dos ejercicios individuales?`)) {
@@ -1329,7 +1340,7 @@ function createMergeSelectItem(exercise) {
 
   const check = document.createElement('span');
   check.className = 'exercise-merge-check';
-  check.textContent = mergeSelection.includes(exercise.id) ? '✓' : '';
+  check.innerHTML = mergeSelection.includes(exercise.id) ? ICON_CHECK_SVG : '';
 
   item.append(nameCol, check);
 
@@ -1585,17 +1596,17 @@ function renderExercisePreview(exercise) {
   // Superserie — read-only one-liner, hidden entirely if not superserie
   el.previewSuperRow.classList.toggle('hidden', !isSuper);
   if (isSuper) {
-    el.previewSuperValue.textContent = `⏸️ Short rest entre serie A y B de: ${config.superRest}s`;
+    el.previewSuperValue.innerHTML = `${ICON_PAUSE_LABEL_SVG} Short rest entre serie A y B de: ${config.superRest}s`;
   }
 
   // Series + Reps
   el.previewSeriesReps.innerHTML = '';
-  el.previewSeriesReps.appendChild(makeReadonlyField('🔢 Series', config.totalSeries));
+  el.previewSeriesReps.appendChild(makeReadonlyField(`${ICON_HASH_LABEL_SVG} Series`, config.totalSeries));
   if (isSuper && config.repsDistintas) {
-    el.previewSeriesReps.appendChild(makeReadonlyField('🔁 Reps', config.totalReps, 'A', 'var(--exercise-a)'));
-    el.previewSeriesReps.appendChild(makeReadonlyField('🔁 Reps', config.totalReps2, 'B', 'var(--exercise-b)'));
+    el.previewSeriesReps.appendChild(makeReadonlyField(`${ICON_REPEAT_LABEL_SVG} Reps`, config.totalReps, 'A', 'var(--exercise-a)'));
+    el.previewSeriesReps.appendChild(makeReadonlyField(`${ICON_REPEAT_LABEL_SVG} Reps`, config.totalReps2, 'B', 'var(--exercise-b)'));
   } else {
-    el.previewSeriesReps.appendChild(makeReadonlyField('🔁 Reps', config.totalReps));
+    el.previewSeriesReps.appendChild(makeReadonlyField(`${ICON_REPEAT_LABEL_SVG} Reps`, config.totalReps));
   }
 
   // Al fallo — only the series actually marked, tagged and colored
@@ -1635,13 +1646,13 @@ function renderExercisePreview(exercise) {
   let anyIntensity;
   if (isSuper) {
     const hasA = renderIntensityHistory(el.previewIntensityRowA, el.previewIntensityLabelA, el.previewIntensityListA,
-      '💪 Int. A', exercise.intensityLogA, 'var(--exercise-a)');
+      `${ICON_BOLT_LABEL_SVG} Int. A`, exercise.intensityLogA, 'var(--exercise-a)');
     const hasB = renderIntensityHistory(el.previewIntensityRowB, el.previewIntensityLabelB, el.previewIntensityListB,
-      '💪 Int. B', exercise.intensityLogB, 'var(--exercise-b)');
+      `${ICON_BOLT_LABEL_SVG} Int. B`, exercise.intensityLogB, 'var(--exercise-b)');
     anyIntensity = hasA || hasB;
   } else {
     anyIntensity = renderIntensityHistory(el.previewIntensityRowA, el.previewIntensityLabelA, el.previewIntensityListA,
-      '💪 Int.', exercise.intensityLog);
+      `${ICON_BOLT_LABEL_SVG} Int.`, exercise.intensityLog);
     el.previewIntensityRowB.classList.add('hidden');
   }
   el.previewIntensityLegend.classList.toggle('hidden', !anyIntensity);
@@ -1680,7 +1691,7 @@ function makeReadonlyField(label, value, tag, color) {
   }
   const lbl = document.createElement('span');
   lbl.className = 'config-label';
-  lbl.textContent = label;
+  lbl.innerHTML = label;
   const val = document.createElement('span');
   val.className = 'readonly-value';
   val.textContent = value;
@@ -1712,7 +1723,7 @@ function renderIntensityHistory(rowEl, labelEl, listEl, label, log, color) {
   const entries = (log || []).slice(-3).reverse();
   rowEl.classList.toggle('hidden', entries.length === 0);
   if (entries.length === 0) return false;
-  labelEl.textContent = label;
+  labelEl.innerHTML = label;
   labelEl.style.color = color || '';
   listEl.innerHTML = '';
   entries.forEach((record, i) => listEl.appendChild(createIntensityChip(record, INTENSITY_POSITION_LABELS[i])));
@@ -1948,7 +1959,7 @@ function createEditingNameRow(slotLabel, name) {
 
   const btn = document.createElement('button');
   btn.className = 'editing-name-edit-btn';
-  btn.textContent = '✎';
+  btn.innerHTML = ICON_PENCIL_SVG;
   btn.addEventListener('click', () => openRenameModal(slotLabel || 'single'));
   row.appendChild(btn);
 

@@ -1094,13 +1094,26 @@ h1 {
 .exercises-backup-btn:active { background: #3a3a5a; }
 
 /* Inline SVGs from the Glyphs Poly icon set (icon-sets.iconify.design/glyphs-poly) —
-   fills forced to currentColor so they tint like the rest of the icon buttons */
+   fills forced to currentColor so they tint like the rest of the icon buttons.
+   inline-block + vertical-align lets them sit inside flex-centered buttons
+   (button already centers block-level flex children) AND inline next to
+   label text (the vertical-align only kicks in there). */
 .icon-svg {
   width: 16px;
   height: 16px;
   fill: currentColor;
-  display: block;
+  display: inline-block;
+  vertical-align: -3px;
+  flex-shrink: 0;
 }
+.icon-svg-label { width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px; }
+.icon-svg-md { width: 18px; height: 18px; }
+.icon-svg-lg { width: 22px; height: 22px; }
+.icon-svg-xl { width: 34px; height: 34px; }
+.icon-svg-xxl { width: 72px; height: 72px; }
+
+/* Fusionar: distinto color al violeta del módulo Ejercicios */
+#btn-merge-exercises { color: var(--green); }
 
 .exercises-backup-btn:disabled {
   color: var(--text-dim);
@@ -1584,6 +1597,7 @@ html.compact {
   & #workout-panel { padding: 6px 14px 8px; }
 
   & .btn-back { width: 36px; height: 36px; font-size: 1.1rem; border-radius: 10px; }
+  & .icon-svg-lg { width: 19px; height: 19px; }
   & #status-info span { font-size: 0.75rem; }
   & #status-phase-name { font-size: 0.82rem !important; }
 
@@ -1606,6 +1620,7 @@ html.compact {
 
   & #controls { gap: 10px; margin-top: 4px; }
   & .btn-control { height: 50px; font-size: 2.1rem; border-radius: 13px; }
+  & .icon-svg-xl { width: 27px; height: 27px; }
   & #btn-play-pause, & #btn-play-pause-rest, & #btn-skip { border-radius: 50px; }
   & .btn-skip span { font-size: 0.75rem; }
 
@@ -1618,6 +1633,7 @@ html.compact {
   /* ── Done panel ── */
   & #done-panel { gap: 14px; padding: 16px; }
   & #done-icon { font-size: 3.5rem; }
+  & .icon-svg-xxl { width: 42px; height: 42px; }
   & #done-text { font-size: 1.2rem; }
   & .done-fallo-entry { padding: 8px 14px; }
   & .done-fallo-entry .entry-reps { font-size: 1.2rem; }
