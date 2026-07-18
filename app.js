@@ -1864,8 +1864,8 @@ function enterInlinePreviewEdit() {
 function exitInlinePreviewEdit() {
   if (!inlineEditFromPreview) return;
   inlineEditFromPreview = false;
-  panels.config.insertBefore(el.seriesModule, el.exercisesRow);
-  panels.config.insertBefore(el.actionsStack, el.exercisesRow);
+  panels.config.appendChild(el.seriesModule);
+  panels.config.appendChild(el.actionsStack);
   el.previewEditSlot.classList.add('hidden');
   el.previewSeriesModule.classList.remove('hidden');
   el.previewActions.classList.remove('hidden');

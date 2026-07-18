@@ -28,6 +28,25 @@
         </div>
       </div>
 
+      <!-- Ejercicios guardados -->
+      <div class="exercises-row" id="exercises-row">
+        <div class="exercises-header">
+          <div class="exercises-merge-controls" id="exercises-merge-controls">
+            <button id="btn-merge-exercises" class="exercises-backup-btn" title="Unir dos ejercicios en superserie"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none"><path fill="currentColor" d="M42 27a2 2 0 1 1-4 0zm-4-15a2 2 0 1 1 4 0zm0 15V12h4v15z"/><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M45.818 27H34.182c-1.174 0-1.762 1.42-.932 2.25l4.629 4.629a3 3 0 0 0 4.242 0l4.629-4.629c.83-.83.242-2.25-.932-2.25"/><path fill="currentColor" d="M42 53a2 2 0 1 0-4 0zm-4 15a2 2 0 1 0 4 0zm0-15v15h4V53z"/><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M45.818 53H34.182c-1.174 0-1.762-1.42-.932-2.25l4.629-4.629a3 3 0 0 1 4.242 0l4.629 4.629c.83.83.242 2.25-.932 2.25"/></g></svg></button>
+            <button id="btn-merge-cancel" class="exercises-backup-btn hidden" title="Cancelar"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path stroke="currentColor" d="m24.444 24.557l14.142 14.142l2.828 2.828L55.556 55.67"/><path stroke="currentColor" d="M55.556 24.557L41.414 38.699l-2.828 2.828L24.444 55.67"/></g></svg></button>
+            <button id="btn-merge-confirm" class="exercises-backup-btn hidden" title="Confirmar unión" disabled><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="m14.121 40.092l15.557 15.556a2 2 0 0 0 2.828 0l32.527-32.527"/></svg></button>
+          </div>
+          <div class="exercises-title">Ejercicios</div>
+          <div class="exercises-backup-btns">
+            <button id="btn-export-exercises" class="exercises-backup-btn" title="Exportar a archivo"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(180 40 40)" fill="none"><path fill="currentColor" d="M42 23.241a2 2 0 1 0-4 0zm-4 14.738a2 2 0 1 0 4 0zM42 38a2 2 0 1 0-4 0zm-4 23a2 2 0 0 0 4 0zm0-37.759v14.738h4V23.24zm0 14.76v23h4V38z"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M56 38L42.121 24.121a3 3 0 0 0-4.242 0L24 38"/><path stroke="currentColor" stroke-linecap="round" stroke-width="4" d="M24 15h32"/></g></svg></button>
+            <button id="btn-import-exercises" class="exercises-backup-btn" title="Importar desde archivo"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none"><path fill="currentColor" d="M42 23.241a2 2 0 1 0-4 0zm-4 14.738a2 2 0 1 0 4 0zM42 38a2 2 0 1 0-4 0zm-4 23a2 2 0 0 0 4 0zm0-37.759v14.738h4V23.24zm0 14.76v23h4V38z"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M56 38L42.121 24.121a3 3 0 0 0-4.242 0L24 38"/><path stroke="currentColor" stroke-linecap="round" stroke-width="4" d="M24 15h32"/></g></svg></button>
+            <input type="file" id="import-exercises-input" accept="application/json,.json" class="hidden">
+          </div>
+        </div>
+        <div id="exercises-list"></div>
+        <div class="exercises-empty hidden" id="exercises-empty">Todavía no guardaste ningún ejercicio</div>
+      </div>
+
       <div class="series-module" id="series-module">
 
         <div class="series-module-shine" id="series-module-shine"></div>
@@ -179,25 +198,6 @@
         <button id="btn-save-exercise" class="btn-save-exercise">Guardar</button>
         <div class="actions-divider">o</div>
         <button id="btn-start" class="btn-primary">INICIAR</button>
-      </div>
-
-      <!-- Ejercicios guardados -->
-      <div class="exercises-row" id="exercises-row">
-        <div class="exercises-header">
-          <div class="exercises-merge-controls" id="exercises-merge-controls">
-            <button id="btn-merge-exercises" class="exercises-backup-btn" title="Unir dos ejercicios en superserie"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none"><path fill="currentColor" d="M42 27a2 2 0 1 1-4 0zm-4-15a2 2 0 1 1 4 0zm0 15V12h4v15z"/><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M45.818 27H34.182c-1.174 0-1.762 1.42-.932 2.25l4.629 4.629a3 3 0 0 0 4.242 0l4.629-4.629c.83-.83.242-2.25-.932-2.25"/><path fill="currentColor" d="M42 53a2 2 0 1 0-4 0zm-4 15a2 2 0 1 0 4 0zm0-15v15h4V53z"/><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M45.818 53H34.182c-1.174 0-1.762-1.42-.932-2.25l4.629-4.629a3 3 0 0 1 4.242 0l4.629 4.629c.83.83.242 2.25-.932 2.25"/></g></svg></button>
-            <button id="btn-merge-cancel" class="exercises-backup-btn hidden" title="Cancelar"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path stroke="currentColor" d="m24.444 24.557l14.142 14.142l2.828 2.828L55.556 55.67"/><path stroke="currentColor" d="M55.556 24.557L41.414 38.699l-2.828 2.828L24.444 55.67"/></g></svg></button>
-            <button id="btn-merge-confirm" class="exercises-backup-btn hidden" title="Confirmar unión" disabled><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="m14.121 40.092l15.557 15.556a2 2 0 0 0 2.828 0l32.527-32.527"/></svg></button>
-          </div>
-          <div class="exercises-title">Ejercicios</div>
-          <div class="exercises-backup-btns">
-            <button id="btn-export-exercises" class="exercises-backup-btn" title="Exportar a archivo"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(180 40 40)" fill="none"><path fill="currentColor" d="M42 23.241a2 2 0 1 0-4 0zm-4 14.738a2 2 0 1 0 4 0zM42 38a2 2 0 1 0-4 0zm-4 23a2 2 0 0 0 4 0zm0-37.759v14.738h4V23.24zm0 14.76v23h4V38z"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M56 38L42.121 24.121a3 3 0 0 0-4.242 0L24 38"/><path stroke="currentColor" stroke-linecap="round" stroke-width="4" d="M24 15h32"/></g></svg></button>
-            <button id="btn-import-exercises" class="exercises-backup-btn" title="Importar desde archivo"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none"><path fill="currentColor" d="M42 23.241a2 2 0 1 0-4 0zm-4 14.738a2 2 0 1 0 4 0zM42 38a2 2 0 1 0-4 0zm-4 23a2 2 0 0 0 4 0zm0-37.759v14.738h4V23.24zm0 14.76v23h4V38z"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M56 38L42.121 24.121a3 3 0 0 0-4.242 0L24 38"/><path stroke="currentColor" stroke-linecap="round" stroke-width="4" d="M24 15h32"/></g></svg></button>
-            <input type="file" id="import-exercises-input" accept="application/json,.json" class="hidden">
-          </div>
-        </div>
-        <div id="exercises-list"></div>
-        <div class="exercises-empty hidden" id="exercises-empty">Todavía no guardaste ningún ejercicio</div>
       </div>
     </div>
 
