@@ -1211,6 +1211,7 @@ function createWeightInput(label, key) {
   const lbl = document.createElement('span');
   lbl.className = 'weight-label';
   lbl.textContent = label;
+  if (key.includes('-')) lbl.style.color = accentColorForKey(key);
 
   const input = document.createElement('input');
   input.type = 'number';

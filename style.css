@@ -401,6 +401,10 @@ h1 {
 .invert-wrap { display: flex; align-items: center; gap: 6px; }
 .fases-distintas-toggle { display: flex; align-items: center; gap: 8px; }
 .reps-b-group { display: flex; align-items: center; gap: 8px; }
+
+/* Same A/B accent colors used everywhere else (preview, intensity, weights) */
+#reps-a-label, #phases-ej1-label { color: var(--exercise-a); font-weight: 800; }
+#reps-b-label, #phases-ej2-label { color: var(--exercise-b); font-weight: 800; }
 .phases { display: flex; gap: 14px; }
 .phase-item[data-phase="conc"]  { order: 1; }
 .phase-item[data-phase="isom"]  { order: 2; }
