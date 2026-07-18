@@ -1,10 +1,16 @@
-const CACHE = 'gym-timer-v2';
+const CACHE = 'gym-timer-v43';
 const ASSETS = [
   './index.html',
   './style.css',
   './app.js',
   './manifest.json',
   './icon.svg',
+  './icons/feeling-muy-bien.png',
+  './icons/feeling-bien.png',
+  './icons/feeling-justo.png',
+  './icons/feeling-faltaron-2.png',
+  './icons/feeling-faltaron-4.png',
+  './icons/feeling-faltaron-5.png',
 ];
 
 self.addEventListener('install', e => {

@@ -16,7 +16,51 @@
     <div id="config-panel">
       <h1>Gym Timer</h1>
 
-      <div class="config-grid">
+      <!-- Descanso rápido (independiente de un entrenamiento) -->
+      <div class="quick-rest-row" id="quick-rest-row">
+        <div class="quick-rest-title">Descanso</div>
+        <div id="quick-rest-presets">
+          <button class="rest-preset-btn" data-sec="90">90s</button>
+          <button class="rest-preset-btn" data-sec="120">120s</button>
+          <button class="rest-preset-btn" data-sec="150">150s</button>
+          <button class="rest-preset-btn" data-sec="180">180s</button>
+          <button class="rest-preset-btn" data-sec="0">✏️</button>
+        </div>
+      </div>
+
+      <div class="series-module" id="series-module">
+
+        <div class="series-module-shine" id="series-module-shine"></div>
+
+        <div class="series-module-header">
+          <div class="series-module-title-wrap">
+            <div class="series-module-title">Series</div>
+            <div class="series-module-editing hidden" id="series-editing-label">Editando</div>
+            <div class="series-editing-names hidden" id="series-editing-names"></div>
+          </div>
+          <button class="module-collapse-btn" id="series-collapse-btn" aria-label="Colapsar módulo" aria-expanded="true">▾</button>
+        </div>
+
+        <div class="series-module-body" id="series-module-body">
+
+        <!-- Superserie -->
+        <div class="config-row">
+          <span class="config-label">Superserie</span>
+          <label class="toggle-wrap">
+            <input type="checkbox" id="toggle-super">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="unit">Short rest de:</span>
+          <input type="number" id="super-rest" min="1" max="60" value="20" class="num-input small" disabled>
+          <span class="unit">s</span>
+        </div>
+
+        <!-- Descanso entre series -->
+        <div class="config-row">
+          <span class="config-label">Descanso interseries</span>
+          <input type="number" id="rest-series" min="5" max="300" value="120" class="num-input">
+          <span class="unit">s</span>
+        </div>
 
         <!-- Series + Reps (merged card) -->
         <div class="config-row series-reps-row">
@@ -50,23 +94,10 @@
           <div id="fallo-series-btns" class="fallo-btns hidden"></div>
         </div>
 
-        <!-- Superserie -->
-        <div class="config-row">
-          <span class="config-label">Superserie</span>
-          <label class="toggle-wrap">
-            <input type="checkbox" id="toggle-super">
-            <span class="toggle-slider"></span>
-          </label>
-          <span class="unit">Descanso de:</span>
-          <input type="number" id="super-rest" min="1" max="60" value="20" class="num-input small" disabled>
-          <span class="unit">s</span>
-        </div>
-
-        <!-- Descanso entre series -->
-        <div class="config-row">
-          <span class="config-label">Descanso interseries</span>
-          <input type="number" id="rest-series" min="5" max="300" value="120" class="num-input">
-          <span class="unit">s</span>
+        <!-- Pesos por serie -->
+        <div class="config-row weights-row">
+          <span class="config-label">Pesos</span>
+          <div id="weights-list" class="weights-list"></div>
         </div>
 
         <!-- Fases de rep -->
@@ -139,9 +170,30 @@
           </div>
         </div>
 
+        </div>
+
       </div>
 
-      <button id="btn-start" class="btn-primary">INICIAR</button>
+      <!-- Guardar ejercicio / Iniciar entrenamiento -->
+      <div class="actions-stack" id="actions-stack">
+        <button id="btn-save-exercise" class="btn-save-exercise">Guardar</button>
+        <div class="actions-divider">o</div>
+        <button id="btn-start" class="btn-primary">INICIAR</button>
+      </div>
+
+      <!-- Ejercicios guardados -->
+      <div class="exercises-row" id="exercises-row">
+        <div class="exercises-header">
+          <div class="exercises-title">Ejercicios</div>
+          <div class="exercises-backup-btns">
+            <button id="btn-export-exercises" class="exercises-backup-btn" title="Exportar a archivo">⬇️</button>
+            <button id="btn-import-exercises" class="exercises-backup-btn" title="Importar desde archivo">⬆️</button>
+            <input type="file" id="import-exercises-input" accept="application/json,.json" class="hidden">
+          </div>
+        </div>
+        <div id="exercises-list"></div>
+        <div class="exercises-empty hidden" id="exercises-empty">Todavía no guardaste ningún ejercicio</div>
+      </div>
     </div>
 
     <!-- WORKOUT PANEL -->
@@ -180,7 +232,7 @@
       <!-- Controls -->
       <div id="controls">
         <button id="btn-play-pause" class="btn-control">⏸</button>
-        <button id="btn-skip" class="btn-control btn-skip">⏭<span>Skip serie</span></button>
+        <button id="btn-skip" class="btn-control btn-skip">⏭<span id="btn-skip-label">Skip serie</span></button>
       </div>
 
     </div>
@@ -223,7 +275,74 @@
           <span class="unit">s</span>
         </div>
       </div>
+      <div id="intensity-register" class="hidden">
+        <div class="done-rest-title">Registrar intensidad</div>
+        <div id="intensity-sections"></div>
+        <button id="intensity-confirm" class="btn-save-exercise">Guardar</button>
+      </div>
       <button id="btn-restart" class="btn-primary">Nueva sesión</button>
+    </div>
+
+    <!-- EXERCISE PREVIEW PANEL (read-only, before starting a saved exercise) -->
+    <div id="preview-panel" class="hidden">
+      <div id="preview-header">
+        <button id="btn-back-preview" class="btn-back">←</button>
+      </div>
+
+      <div class="series-module" id="preview-series-module">
+        <div class="series-module-header">
+          <div class="preview-titles" id="preview-titles"></div>
+        </div>
+
+        <div class="series-module-body">
+          <div class="config-row hidden" id="preview-super-row">
+            <span class="readonly-value" id="preview-super-value"></span>
+          </div>
+
+          <div class="config-row">
+            <span class="config-label">⏱️ Descanso interseries</span>
+            <span class="readonly-value" id="preview-rest-series"></span>
+          </div>
+
+          <div class="config-row">
+            <div class="sr-inputs" id="preview-series-reps"></div>
+          </div>
+
+          <div class="config-row hidden" id="preview-fallo-row">
+            <span class="config-label">🔥 Al fallo</span>
+            <span id="preview-fallo-tags"></span>
+          </div>
+
+          <div class="config-row weights-row hidden" id="preview-weights-row">
+            <span class="config-label">🏋️ Pesos</span>
+            <div id="preview-weights-list" class="weights-list"></div>
+          </div>
+
+          <div class="config-row weights-row hidden" id="preview-intensity-row-a">
+            <span class="config-label" id="preview-intensity-label-a"></span>
+            <div id="preview-intensity-list-a" class="weights-list"></div>
+          </div>
+
+          <div class="config-row weights-row hidden" id="preview-intensity-row-b">
+            <span class="config-label" id="preview-intensity-label-b"></span>
+            <div id="preview-intensity-list-b" class="weights-list"></div>
+          </div>
+
+          <div class="config-row hidden" id="preview-intensity-legend"></div>
+
+          <div class="config-row phases-row" id="preview-phases-row"></div>
+        </div>
+      </div>
+
+      <div class="actions-stack" id="preview-actions">
+        <button id="btn-preview-edit" class="btn-save-exercise">Editar</button>
+        <div class="actions-divider">o</div>
+        <button id="btn-preview-start" class="btn-primary">Comenzar</button>
+      </div>
+
+      <!-- The real, editable Series module + Guardar/Iniciar get moved in
+           here (from #config-panel) while editing inline on this screen -->
+      <div id="preview-edit-slot" class="hidden"></div>
     </div>
 
   </div>
@@ -231,15 +350,56 @@
   <!-- Rest-between-sessions toast (fixed, slides from top) -->
   <div id="rest-toast" class="hidden">
     <div class="rest-toast-inner">
-      <div class="rest-toast-info">
-        <span class="rest-toast-label">Siguiente en</span>
+      <div class="rest-toast-info" id="rest-toast-info">
+        <span class="rest-toast-label" id="rest-toast-label">Siguiente en</span>
         <span id="rest-toast-time">90</span>
         <span class="unit">s</span>
       </div>
+      <div class="rest-toast-custom hidden" id="rest-toast-custom">
+        <input type="number" id="rest-toast-custom-input" min="10" max="900" value="120" class="num-input small">
+        <span class="unit">s</span>
+        <button id="rest-toast-custom-start" class="btn-toast-start">Iniciar</button>
+      </div>
       <button id="rest-toast-close">✕</button>
     </div>
-    <div class="rest-toast-bar-wrap">
+    <div class="rest-toast-bar-wrap" id="rest-toast-bar-wrap">
       <div id="rest-toast-bar"></div>
+    </div>
+  </div>
+
+  <!-- Save-exercise modal -->
+  <div id="save-exercise-modal" class="hidden">
+    <div class="modal-backdrop" id="save-exercise-backdrop"></div>
+    <div class="modal-box">
+      <div class="modal-title">Guardar ejercicio</div>
+      <input type="text" id="save-exercise-name-input" class="modal-input" placeholder="Nombre del ejercicio">
+      <div id="save-exercise-name-super" class="save-exercise-name-super hidden">
+        <div class="save-exercise-name-group">
+          <span class="config-label">Ejercicio A</span>
+          <input type="text" id="save-exercise-name-a-input" class="modal-input" placeholder="Nombre ejercicio A">
+        </div>
+        <div class="save-exercise-name-group">
+          <span class="config-label">Ejercicio B</span>
+          <input type="text" id="save-exercise-name-b-input" class="modal-input" placeholder="Nombre ejercicio B">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="save-exercise-cancel" class="btn-modal-secondary">Cancelar</button>
+        <button id="save-exercise-confirm" class="btn-primary btn-modal-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rename-exercise-name modal (edit mode, pencil next to each name) -->
+  <div id="rename-exercise-modal" class="hidden">
+    <div class="modal-backdrop" id="rename-exercise-backdrop"></div>
+    <div class="modal-box">
+      <div class="modal-title">Editar nombre</div>
+      <input type="text" id="rename-exercise-input" class="modal-input" placeholder="Nombre">
+      <div class="modal-actions">
+        <button id="rename-exercise-cancel" class="btn-modal-secondary">Cancelar</button>
+        <button id="rename-exercise-confirm" class="btn-primary btn-modal-primary">OK</button>
+      </div>
     </div>
   </div>
 

@@ -59,6 +59,7 @@ const panels = {
   workout: document.getElementById('workout-panel'),
   rest:    document.getElementById('rest-panel'),
   done:    document.getElementById('done-panel'),
+  preview: document.getElementById('preview-panel'),
 };
 
 const el = {
@@ -74,10 +75,12 @@ const el = {
   phasePausa:      document.getElementById('phase-pausa'),
   phasePausa2:     document.getElementById('phase-pausa-2'),
   falloSeriesBtns: document.getElementById('fallo-series-btns'),
+  weightsList:     document.getElementById('weights-list'),
   btnStart:        document.getElementById('btn-start'),
   btnPlayPause:     document.getElementById('btn-play-pause'),
   btnPlayPauseRest: document.getElementById('btn-play-pause-rest'),
   btnSkip:         document.getElementById('btn-skip'),
+  btnSkipLabel:    document.getElementById('btn-skip-label'),
   btnSkipRest:     document.getElementById('btn-skip-rest'),
   btnRestart:      document.getElementById('btn-restart'),
   btnBackWorkout:  document.getElementById('btn-back-workout'),
@@ -96,9 +99,16 @@ const el = {
   doneFallo:            document.getElementById('done-fallo'),
   doneFalloList:        document.getElementById('done-fallo-list'),
   restToast:            document.getElementById('rest-toast'),
+  restToastLabel:       document.getElementById('rest-toast-label'),
   restToastTime:        document.getElementById('rest-toast-time'),
   restToastBar:         document.getElementById('rest-toast-bar'),
+  restToastBarWrap:     document.getElementById('rest-toast-bar-wrap'),
   restToastClose:       document.getElementById('rest-toast-close'),
+  restToastInfo:        document.getElementById('rest-toast-info'),
+  restToastCustom:      document.getElementById('rest-toast-custom'),
+  restToastCustomInput: document.getElementById('rest-toast-custom-input'),
+  restToastCustomStart: document.getElementById('rest-toast-custom-start'),
+  quickRestRow:            document.getElementById('quick-rest-row'),
   doneRestCustomWrap:   document.getElementById('done-rest-custom'),
   doneRestCustomInput:  document.getElementById('done-rest-custom-input'),
   toggleRepsDistintas:  document.getElementById('toggle-reps-distintas'),
@@ -115,6 +125,59 @@ const el = {
   phaseExcen2:          document.getElementById('phase-excen-2'),
   toggleInvert1:        document.getElementById('toggle-invert-1'),
   toggleInvert2:        document.getElementById('toggle-invert-2'),
+  btnSaveExercise:      document.getElementById('btn-save-exercise'),
+  exercisesList:        document.getElementById('exercises-list'),
+  exercisesEmpty:       document.getElementById('exercises-empty'),
+  btnExportExercises:   document.getElementById('btn-export-exercises'),
+  btnImportExercises:   document.getElementById('btn-import-exercises'),
+  importExercisesInput: document.getElementById('import-exercises-input'),
+  saveExerciseModal:    document.getElementById('save-exercise-modal'),
+  saveExerciseBackdrop: document.getElementById('save-exercise-backdrop'),
+  saveExerciseNameInput: document.getElementById('save-exercise-name-input'),
+  saveExerciseNameSuper: document.getElementById('save-exercise-name-super'),
+  saveExerciseNameAInput: document.getElementById('save-exercise-name-a-input'),
+  saveExerciseNameBInput: document.getElementById('save-exercise-name-b-input'),
+  saveExerciseCancel:   document.getElementById('save-exercise-cancel'),
+  saveExerciseConfirm:  document.getElementById('save-exercise-confirm'),
+  seriesModule:         document.getElementById('series-module'),
+  seriesModuleBody:     document.getElementById('series-module-body'),
+  seriesCollapseBtn:    document.getElementById('series-collapse-btn'),
+  actionsStack:         document.getElementById('actions-stack'),
+  seriesEditingLabel:   document.getElementById('series-editing-label'),
+  seriesEditingNames:   document.getElementById('series-editing-names'),
+  seriesModuleShine:    document.getElementById('series-module-shine'),
+  renameExerciseModal:    document.getElementById('rename-exercise-modal'),
+  renameExerciseBackdrop: document.getElementById('rename-exercise-backdrop'),
+  renameExerciseInput:    document.getElementById('rename-exercise-input'),
+  renameExerciseCancel:   document.getElementById('rename-exercise-cancel'),
+  renameExerciseConfirm:  document.getElementById('rename-exercise-confirm'),
+  btnBackPreview:     document.getElementById('btn-back-preview'),
+  previewTitles:      document.getElementById('preview-titles'),
+  previewSuperRow:    document.getElementById('preview-super-row'),
+  previewSuperValue:  document.getElementById('preview-super-value'),
+  previewSeriesReps:  document.getElementById('preview-series-reps'),
+  previewFalloRow:    document.getElementById('preview-fallo-row'),
+  previewFalloTags:   document.getElementById('preview-fallo-tags'),
+  previewWeightsRow:  document.getElementById('preview-weights-row'),
+  previewWeightsList: document.getElementById('preview-weights-list'),
+  previewRestSeries:  document.getElementById('preview-rest-series'),
+  previewPhasesRow:   document.getElementById('preview-phases-row'),
+  btnPreviewEdit:     document.getElementById('btn-preview-edit'),
+  btnPreviewStart:    document.getElementById('btn-preview-start'),
+  previewSeriesModule: document.getElementById('preview-series-module'),
+  previewActions:      document.getElementById('preview-actions'),
+  previewEditSlot:     document.getElementById('preview-edit-slot'),
+  exercisesRow:        document.getElementById('exercises-row'),
+  intensityRegister:   document.getElementById('intensity-register'),
+  intensitySections:   document.getElementById('intensity-sections'),
+  intensityConfirm:    document.getElementById('intensity-confirm'),
+  previewIntensityRowA:   document.getElementById('preview-intensity-row-a'),
+  previewIntensityLabelA: document.getElementById('preview-intensity-label-a'),
+  previewIntensityListA:  document.getElementById('preview-intensity-list-a'),
+  previewIntensityRowB:   document.getElementById('preview-intensity-row-b'),
+  previewIntensityLabelB: document.getElementById('preview-intensity-label-b'),
+  previewIntensityListB:  document.getElementById('preview-intensity-list-b'),
+  previewIntensityLegend: document.getElementById('preview-intensity-legend'),
 };
 
 // ── Module-level state ─────────────────────────────────────────────────────
@@ -129,8 +192,108 @@ let wakeLock = null;
 // Keys of series that are "al fallo" — "N" (no super) or "N-1"/"N-2" (super)
 let falloSeriesSet = new Set();
 
+// Weight (Kg) per serie — "N" (no super) or "N-1"/"N-2" (super), same key scheme as falloSeriesSet
+let weightsMap = new Map();
+
 let selectedRestSecs = null;
 let restAfterTicker  = null;
+
+// Toast mode: null (hidden) | 'standalone' (optional rest, own ticker) | 'linked' (minimized workout rest)
+let toastMode = null;
+
+// ── Saved exercises (localStorage) ──────────────────────────────────────────
+const EXERCISES_KEY = 'gym-timer-exercises';
+
+function loadExercises() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(EXERCISES_KEY));
+    return Array.isArray(raw) ? raw : [];
+  } catch (_) {
+    return [];
+  }
+}
+function saveExercises() {
+  localStorage.setItem(EXERCISES_KEY, JSON.stringify(exercises));
+}
+
+// ── Export / Import (backup outside localStorage) ───────────────────────────
+function exportExercises() {
+  const blob = new Blob([JSON.stringify(exercises, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `gym-timer-ejercicios-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function importExercisesFromFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    let imported;
+    try {
+      imported = JSON.parse(reader.result);
+    } catch (_) {
+      alert('El archivo no es un JSON válido.');
+      return;
+    }
+    if (!Array.isArray(imported)) {
+      alert('El archivo no tiene el formato esperado.');
+      return;
+    }
+    if (!confirm(`Se van a reemplazar los ${exercises.length} ejercicios actuales por los ${imported.length} del archivo. ¿Continuar?`)) {
+      return;
+    }
+    exercises = imported;
+    saveExercises();
+    renderExercisesList();
+  };
+  reader.readAsText(file);
+}
+
+el.btnExportExercises.addEventListener('click', exportExercises);
+el.btnImportExercises.addEventListener('click', () => el.importExercisesInput.click());
+el.importExercisesInput.addEventListener('change', () => {
+  const file = el.importExercisesInput.files[0];
+  el.importExercisesInput.value = '';
+  if (file) importExercisesFromFile(file);
+});
+
+let exercises = loadExercises();
+let editingExerciseId = null;
+// True only while the user is actively in "editing a saved exercise" mode
+// (entered via the ✎ button) — separate from editingExerciseId, which also
+// gets set right after saving a brand-new exercise (so a second Guardar
+// overwrites instead of duplicating) without that implying "edit mode".
+let isEditingExercise = false;
+
+// Which saved exercise is shown on the read-only preview screen (Play button)
+let previewingExerciseId = null;
+// True while the real, editable Series module has been moved into the
+// preview screen (Editar tapped from there) instead of living in #config-panel
+let inlineEditFromPreview = false;
+
+// Which saved exercise the currently running (or just-finished) workout came
+// from, if any — set by startWorkout(), read once by finishWorkout() to
+// decide whether "Registrar intensidad" applies.
+let activeSourceExerciseId = null;
+
+// ── Intensity tracking ───────────────────────────────────────────────────
+const FEELING_OPTIONS = [
+  { key: 'muy-bien',   icon: 'icons/feeling-muy-bien.png',   label: 'Muy bien' },
+  { key: 'bien',       icon: 'icons/feeling-bien.png',       label: 'Bien' },
+  { key: 'justo',      icon: 'icons/feeling-justo.png',      label: 'Justo' },
+  { key: 'faltaron-2', icon: 'icons/feeling-faltaron-2.png', label: 'Faltaron ≤ 2' },
+  { key: 'faltaron-4', icon: 'icons/feeling-faltaron-4.png', label: 'Faltaron ≤ 4' },
+  { key: 'faltaron-5', icon: 'icons/feeling-faltaron-5.png', label: 'Faltaron ≥ 5' },
+];
+let pendingIntensitySelections = {};
+
+function makeExerciseId() {
+  return (crypto.randomUUID && crypto.randomUUID()) || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 // ── Circle ─────────────────────────────────────────────────────────────────
 const R_MAX = 120;
@@ -192,12 +355,13 @@ function resumeRestBar() {
   });
 }
 
-// ── Countdown before workout ───────────────────────────────────────────────
-function startCountdown(onComplete) {
-  let count = 10;
+// ── Countdown before workout (also reused as the post-skip grace period) ───
+function startCountdown(seconds, onComplete) {
+  let count = seconds;
   el.statusPhase.textContent = 'Preparate...';
+  el.btnSkipLabel.textContent = 'Skip Intro';
   const updateCircle = (c) => {
-    const r = R_MAX * ((10 - c) / 10);
+    const r = R_MAX * ((seconds - c) / seconds);
     el.circleFill.setAttribute('r', r.toFixed(1));
     el.circleFill.style.fill = '#888899';
     el.circleTrack.style.stroke = '#888899';
@@ -218,9 +382,20 @@ function startCountdown(onComplete) {
       beepCountdownGo();
       clearInterval(countdownTimer);
       // Store the post-GO delay so goToConfig / skip can cancel it
-      countdownTimer = setTimeout(() => { countdownTimer = null; onComplete(); }, 500);
+      countdownTimer = setTimeout(() => {
+        countdownTimer = null;
+        el.btnSkipLabel.textContent = 'Skip serie';
+        onComplete();
+      }, 500);
     }
   }, 1000);
+}
+
+// 3s grace period before actually starting reps — used both when skipping
+// rest and when skipping the initial 10s intro countdown, so the user always
+// gets a moment to put the phone down before the exercise really begins.
+function startGracePeriod(onComplete) {
+  startCountdown(3, onComplete);
 }
 
 // ── Go back to config ──────────────────────────────────────────────────────
@@ -235,11 +410,18 @@ function goToConfig() {
   restDoneTimer = null;
   releaseWakeLock();
   setPaused(false);
+  if (toastMode === 'linked') hideToast();
+  state.minimized = false;
+  toastMode = null;
+  editingExerciseId = null;
+  isEditingExercise = false;
+  updateEditingUI();
+  el.quickRestRow.classList.remove('disabled');
   showPanel('config');
 }
 
 el.btnBackWorkout.addEventListener('click', goToConfig);
-el.btnBackRest.addEventListener('click', goToConfig);
+el.btnBackRest.addEventListener('click', minimizeWorkout);
 
 // ── Config read ────────────────────────────────────────────────────────────
 function readConfig() {
@@ -247,6 +429,7 @@ function readConfig() {
     totalSeries:   parseInt(el.numSeries.value)   || 4,
     totalReps:     parseInt(el.numReps.value)     || 10,
     falloSeries:   new Set(falloSeriesSet),
+    weights:       Object.fromEntries(weightsMap),
     restSeries:    parseInt(el.restSeries.value)  || 90,
     superEnabled:  el.toggleSuper.checked,
     superRest:     parseInt(el.superRest.value)   || 20,
@@ -264,6 +447,65 @@ function readConfig() {
     invertPhases1:  el.toggleInvert1.checked,
     invertPhases2:  el.toggleInvert2.checked,
   };
+}
+
+// JSON-safe snapshot of the current form, for saving as an exercise
+function serializeCurrentConfig() {
+  const config = readConfig();
+  config.falloSeries = [...config.falloSeries];
+  return config;
+}
+
+// Inverse of readConfig() — applies a saved config back onto the form.
+// Sets superserie/fases-distintas/reps-distintas/invert first (dispatching
+// their existing 'change' handlers to reuse all the show/hide logic), then
+// restores al-fallo last so the superserie handler's "clear fallo on change"
+// side effect doesn't wipe out the fallo series we're about to restore.
+function applyConfigToForm(config) {
+  el.numSeries.value  = config.totalSeries;
+  el.numReps.value    = config.totalReps;
+  el.restSeries.value = config.restSeries;
+  el.superRest.value  = config.superRest;
+  el.phaseConc.value  = config.phaseConc;
+  el.phaseIsom.value  = config.phaseIsom;
+  el.phaseExcen.value = config.phaseExcen;
+  el.phasePausa.value  = config.phasePausa;
+  el.phasePausa2.value = config.phasePausa2;
+  el.numReps2.value    = config.totalReps2;
+  el.phaseConc2.value  = config.phaseConc2;
+  el.phaseIsom2.value  = config.phaseIsom2;
+  el.phaseExcen2.value = config.phaseExcen2;
+
+  el.toggleSuper.checked = config.superEnabled;
+  el.toggleSuper.dispatchEvent(new Event('change'));
+
+  el.toggleFasesDistintas.checked = config.fasesDistintas;
+  el.toggleFasesDistintas.dispatchEvent(new Event('change'));
+
+  el.toggleRepsDistintas.checked = config.repsDistintas;
+  el.toggleRepsDistintas.dispatchEvent(new Event('change'));
+
+  weightsMap = new Map(Object.entries(config.weights || {}));
+  updateWeightsUI();
+
+  if (el.toggleInvert1.checked !== config.invertPhases1) {
+    el.toggleInvert1.checked = config.invertPhases1;
+    el.toggleInvert1.dispatchEvent(new Event('change'));
+  }
+  if (el.toggleInvert2.checked !== config.invertPhases2) {
+    el.toggleInvert2.checked = config.invertPhases2;
+    el.toggleInvert2.dispatchEvent(new Event('change'));
+  }
+
+  falloSeriesSet = new Set(config.falloSeries);
+  el.toggleFallo.checked = falloSeriesSet.size > 0;
+  if (el.toggleFallo.checked) {
+    updateFalloSeriesUI();
+    setVisible(el.falloSeriesBtns, true);
+  } else {
+    el.falloSeriesBtns.innerHTML = '';
+    setVisible(el.falloSeriesBtns, false);
+  }
 }
 
 // ── Al fallo helpers ───────────────────────────────────────────────────────
@@ -341,8 +583,14 @@ function phaseDuration(ph) {
 }
 
 // ── START ──────────────────────────────────────────────────────────────────
-el.btnStart.addEventListener('click', () => {
-  dismissRestToast();
+function startWorkout(sourceExerciseId = null) {
+  if (toastMode === 'linked') {
+    if (!confirm('Hay un entrenamiento en curso. ¿Descartarlo y empezar uno nuevo?')) return;
+    goToConfig();
+  } else if (toastMode === 'standalone') {
+    dismissRestToast();
+  }
+  activeSourceExerciseId = sourceExerciseId;
   if (ctx.state === 'suspended') ctx.resume();
   cfg = readConfig();
   state = {
@@ -353,6 +601,7 @@ el.btnStart.addEventListener('click', () => {
     paused: false,
     resting: false,
     superResting: false,
+    minimized: false,
     superExercise: 1,
     falloRepsThisSerie: 0,   // reps in current serie (resets each serie)
     falloRepsPerSerie:  {},  // { key: count } recorded when each fallo serie ends
@@ -362,10 +611,15 @@ el.btnStart.addEventListener('click', () => {
   updateStatusBar();
   el.falloCount.textContent = '0';
   updateFalloCounterVisibility();
-  startCountdown(() => {
+  startCountdown(10, () => {
     startPhase(getPhaseOrder()[0]);
     startTicker();
   });
+}
+
+el.btnStart.addEventListener('click', () => {
+  if (isEditingExercise) cancelEditingExercise();
+  else startWorkout();
 });
 
 // ── Ticker ─────────────────────────────────────────────────────────────────
@@ -475,6 +729,7 @@ function endSerie() {
 function startSuperRest() {
   state.superResting = true;
   state.superExercise = 2;
+  state.restTotal = cfg.superRest;
   stopTicker();
   showPanel('rest');
   el.restLabel.textContent = 'Superserie';
@@ -485,6 +740,7 @@ function startSuperRest() {
     state.superResting = false;
     state.rep = 1;
     setPaused(false);
+    unminimizeSilently();
     updateStatusBar();
     updateFalloCounterVisibility();
     showPanel('workout');
@@ -496,6 +752,7 @@ function startSuperRest() {
 // ── Rest between series ────────────────────────────────────────────────────
 function startRest(seconds) {
   state.resting = true;
+  state.restTotal = seconds;
   stopTicker();
   showPanel('rest');
   el.restLabel.textContent = 'Descanso';
@@ -508,6 +765,7 @@ function startRest(seconds) {
     state.rep = 1;
     state.superExercise = 1;
     setPaused(false);
+    unminimizeSilently();
     updateStatusBar();
     updateFalloCounterVisibility();
     showPanel('workout');
@@ -528,6 +786,7 @@ function startRestTicker(total, onComplete) {
     if (state.paused) return;
     remaining--;
     el.restCountdown.textContent = Math.max(0, remaining);
+    if (state.minimized) el.restToastTime.textContent = Math.max(0, remaining);
     if (remaining === 15) beepBell15();
     if (remaining === 10) beepBell10();
     // Ascending tones 5→1 (low→high), same direction as initial countdown
@@ -547,10 +806,20 @@ function startRestTicker(total, onComplete) {
 
 // ── Skip serie ─────────────────────────────────────────────────────────────
 el.btnSkip.addEventListener('click', () => {
-  // Cancel any pending countdown or rest-done timers before advancing
-  clearInterval(countdownTimer);
-  clearTimeout(countdownTimer);
-  countdownTimer = null;
+  if (countdownTimer) {
+    // "Skip Intro" — actually skip: cancel the countdown and start the reps
+    // immediately. Chaining another countdown here (even a short one) looked
+    // and felt like the intro had just restarted instead of being skipped.
+    clearInterval(countdownTimer);
+    clearTimeout(countdownTimer);
+    countdownTimer = null;
+    setPaused(false);
+    el.btnSkipLabel.textContent = 'Skip serie';
+    startPhase(getPhaseOrder()[0]);
+    startTicker();
+    return;
+  }
+  // Skip serie
   clearTimeout(restDoneTimer);
   restDoneTimer = null;
   stopTicker();
@@ -570,8 +839,10 @@ el.btnSkipRest.addEventListener('click', () => {
     updateStatusBar();
     updateFalloCounterVisibility();
     showPanel('workout');
-    startPhase(getPhaseOrder()[0]);
-    startTicker();
+    startGracePeriod(() => {
+      startPhase(getPhaseOrder()[0]);
+      startTicker();
+    });
   } else {
     state.resting = false;
     state.serie++;
@@ -580,8 +851,10 @@ el.btnSkipRest.addEventListener('click', () => {
     updateStatusBar();
     updateFalloCounterVisibility();
     showPanel('workout');
-    startPhase(getPhaseOrder()[0]);
-    startTicker();
+    startGracePeriod(() => {
+      startPhase(getPhaseOrder()[0]);
+      startTicker();
+    });
   }
 });
 
@@ -596,8 +869,19 @@ function handlePlayPause() {
 el.btnPlayPause.addEventListener('click', handlePlayPause);
 el.btnPlayPauseRest.addEventListener('click', handlePlayPause);
 
-// ── Rest-between-sessions toast ────────────────────────────────────────────
+// Shows the countdown view (label/time/bar) and hides the custom-input view
+function showToastCountdownView() {
+  el.restToastInfo.classList.remove('hidden');
+  el.restToastCustom.classList.add('hidden');
+  el.restToastBarWrap.classList.remove('hidden');
+}
+
+// ── Rest-between-sessions toast (standalone: optional post-workout rest, or
+//    the manual quick-rest button on the config screen) ────────────────────
 function startRestToast(seconds) {
+  toastMode = 'standalone';
+  showToastCountdownView();
+  el.restToastLabel.textContent = 'Siguiente en';
   clearInterval(restAfterTicker);
   let remaining = seconds;
   el.restToastTime.textContent = remaining;
@@ -624,13 +908,99 @@ function startRestToast(seconds) {
   }, 1000);
 }
 
-function dismissRestToast() {
-  clearInterval(restAfterTicker);
+function hideToast() {
   el.restToast.classList.remove('visible');
   setTimeout(() => el.restToast.classList.add('hidden'), 400);
 }
 
-el.restToastClose.addEventListener('click', dismissRestToast);
+function dismissRestToast() {
+  clearInterval(restAfterTicker);
+  hideToast();
+  toastMode = null;
+  document.querySelectorAll('#quick-rest-presets .rest-preset-btn').forEach(b => b.classList.remove('active'));
+}
+
+// ── Rest toast (custom-input: gear button lets the user type a duration) ──
+function showCustomRestInput() {
+  toastMode = 'custom-input';
+  el.restToastInfo.classList.add('hidden');
+  el.restToastCustom.classList.remove('hidden');
+  el.restToastBarWrap.classList.add('hidden');
+  el.restToastCustomInput.value = 120;
+  el.restToast.classList.remove('hidden');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.restToast.classList.add('visible');
+  }));
+  setTimeout(() => el.restToastCustomInput.focus(), 350);
+}
+
+function startCustomToast() {
+  const sec = Math.max(10, parseInt(el.restToastCustomInput.value) || 120);
+  startRestToast(sec);
+}
+
+el.restToastCustomStart.addEventListener('click', startCustomToast);
+el.restToastCustomInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') startCustomToast();
+});
+
+// ── Rest toast (linked: workout rest minimized via the back button) ───────
+function minimizeWorkout() {
+  state.minimized = true;
+  toastMode = 'linked';
+  showToastCountdownView();
+  const remaining = Math.max(0, parseInt(el.restCountdown.textContent) || 0);
+  const total = state.restTotal || remaining || 1;
+  const pct = Math.max(0, Math.min(1, remaining / total)) * 100;
+  el.restToastLabel.textContent = 'Volver al entreno';
+  el.restToastTime.textContent = remaining;
+  el.restToastBar.style.transition = 'none';
+  el.restToastBar.style.width = pct + '%';
+  el.restToast.classList.remove('hidden');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.restToast.classList.add('visible');
+    if (!state.paused) {
+      el.restToastBar.style.transition = `width ${remaining}s linear`;
+      el.restToastBar.style.width = '0%';
+    }
+  }));
+  el.quickRestRow.classList.add('disabled');
+  showPanel('config');
+}
+
+// Clears the linked-toast state without switching panels — used when a
+// minimized rest finishes on its own and startRest/startSuperRest are about
+// to showPanel('workout') themselves.
+function unminimizeSilently() {
+  if (!state.minimized) return;
+  state.minimized = false;
+  toastMode = null;
+  hideToast();
+  el.quickRestRow.classList.remove('disabled');
+}
+
+function unminimizeWorkout() {
+  state.minimized = false;
+  toastMode = null;
+  hideToast();
+  el.quickRestRow.classList.remove('disabled');
+  showPanel('rest');
+  if (state.paused) freezeRestBar();
+  else resumeRestBar();
+}
+
+el.restToastClose.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (toastMode === 'linked') {
+    if (confirm('Hay un entrenamiento en curso. ¿Cancelarlo?')) goToConfig();
+  } else {
+    dismissRestToast();
+  }
+});
+
+el.restToast.addEventListener('click', () => {
+  if (toastMode === 'linked') unminimizeWorkout();
+});
 
 // ── Finish ─────────────────────────────────────────────────────────────────
 function finishWorkout() {
@@ -651,16 +1021,113 @@ function finishWorkout() {
       .join('');
   }
 
+  renderIntensityRegisterSection();
+
   showPanel('done');
 }
 
 el.btnRestart.addEventListener('click', () => {
   if (selectedRestSecs !== null) startRestToast(selectedRestSecs);
   selectedRestSecs = null;
-  document.querySelectorAll('.rest-preset-btn').forEach(b => b.classList.remove('active'));
+  editingExerciseId = null;
+  isEditingExercise = false;
+  updateEditingUI();
+  document.querySelectorAll('#done-rest-presets .rest-preset-btn').forEach(b => b.classList.remove('active'));
   el.doneRestCustomWrap.classList.add('hidden');
   showPanel('config');
 });
+
+// ── Register intensity (done panel) ─────────────────────────────────────────
+// cfg still holds the config of the workout that just finished (it's only
+// reassigned by the next startWorkout()), so the last serie's weight(s) are
+// read straight from there.
+function createIntensitySection(slot, name, weight) {
+  const wrap = document.createElement('div');
+  wrap.className = 'intensity-section';
+
+  const title = document.createElement('div');
+  title.className = 'intensity-section-title';
+  title.textContent = slot === 'single' ? name : `${slot}: ${name}`;
+  wrap.appendChild(title);
+
+  const weightLine = document.createElement('div');
+  weightLine.className = 'intensity-weight';
+  weightLine.textContent = `Último peso: ${weight ? weight + ' Kg' : '-'}`;
+  wrap.appendChild(weightLine);
+
+  const options = document.createElement('div');
+  options.className = 'intensity-options';
+  FEELING_OPTIONS.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'intensity-option';
+    btn.innerHTML = `<img class="intensity-emoji" src="${opt.icon}" alt="${opt.label}"><span class="intensity-caption">${opt.label}</span>`;
+    btn.addEventListener('click', () => {
+      options.querySelectorAll('.intensity-option').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      pendingIntensitySelections[slot] = { key: opt.key, weight };
+      updateIntensityConfirmState();
+    });
+    options.appendChild(btn);
+  });
+  wrap.appendChild(options);
+
+  return wrap;
+}
+
+// Renders the section inline on the done panel (no popup) — only visible
+// when this workout came from a saved exercise.
+function renderIntensityRegisterSection() {
+  el.intensityRegister.classList.toggle('hidden', !activeSourceExerciseId);
+  if (!activeSourceExerciseId) return;
+
+  const exercise = exercises.find(e => e.id === activeSourceExerciseId);
+  if (!exercise) { el.intensityRegister.classList.add('hidden'); return; }
+
+  pendingIntensitySelections = {};
+  el.intensitySections.innerHTML = '';
+  el.intensityConfirm.classList.remove('hidden');
+  el.intensityConfirm.disabled = true;
+
+  const lastSerie = cfg.totalSeries;
+  if (cfg.superEnabled) {
+    el.intensitySections.appendChild(
+      createIntensitySection('A', exercise.nameA ?? exercise.name ?? '', cfg.weights[`${lastSerie}-1`]));
+    el.intensitySections.appendChild(
+      createIntensitySection('B', exercise.nameB ?? '', cfg.weights[`${lastSerie}-2`]));
+  } else {
+    el.intensitySections.appendChild(
+      createIntensitySection('single', exercise.name, cfg.weights[`${lastSerie}`]));
+  }
+}
+
+// "Guardar" stays grayed out (disabled) until every applicable exercise has a selection
+function updateIntensityConfirmState() {
+  const slots = cfg.superEnabled ? ['A', 'B'] : ['single'];
+  el.intensityConfirm.disabled = !slots.every(slot => pendingIntensitySelections[slot]);
+}
+
+function confirmIntensity() {
+  const slots = cfg.superEnabled ? ['A', 'B'] : ['single'];
+  if (!slots.every(slot => pendingIntensitySelections[slot])) return; // one per exercise is required
+
+  const idx = exercises.findIndex(e => e.id === activeSourceExerciseId);
+  if (idx === -1) return;
+  const exercise = exercises[idx];
+  const date = Date.now();
+
+  slots.forEach(slot => {
+    const { key, weight } = pendingIntensitySelections[slot];
+    const logKey = slot === 'single' ? 'intensityLog' : slot === 'A' ? 'intensityLogA' : 'intensityLogB';
+    if (!exercise[logKey]) exercise[logKey] = [];
+    exercise[logKey].push({ feeling: key, weight: weight || null, date });
+  });
+
+  saveExercises();
+  el.intensitySections.innerHTML = '<div class="intensity-saved-msg">✓ Intensidad guardada</div>';
+  el.intensityConfirm.classList.add('hidden');
+}
+
+el.intensityConfirm.addEventListener('click', confirmIntensity);
 
 // ── Status bar ─────────────────────────────────────────────────────────────
 function updateStatusBar() {
@@ -712,6 +1179,804 @@ function createFalloBtn(label, key) {
   });
   return btn;
 }
+
+// ── Weights per serie ───────────────────────────────────────────────────────
+function updateWeightsUI() {
+  const total = parseInt(el.numSeries.value) || 4;
+  const superOn = el.toggleSuper.checked;
+  el.weightsList.innerHTML = '';
+
+  const validKeys = new Set();
+  for (let i = 1; i <= total; i++) {
+    if (superOn) { validKeys.add(`${i}-1`); validKeys.add(`${i}-2`); }
+    else           validKeys.add(`${i}`);
+  }
+  for (const k of [...weightsMap.keys()]) {
+    if (!validKeys.has(k)) weightsMap.delete(k);
+  }
+
+  for (let i = 1; i <= total; i++) {
+    if (superOn) {
+      el.weightsList.appendChild(createWeightInput(`S.${i}A`, `${i}-1`));
+      el.weightsList.appendChild(createWeightInput(`S.${i}B`, `${i}-2`));
+    } else {
+      el.weightsList.appendChild(createWeightInput(`S.${i}`, `${i}`));
+    }
+  }
+}
+
+function createWeightInput(label, key) {
+  const wrap = document.createElement('div');
+  wrap.className = 'weight-item';
+
+  const lbl = document.createElement('span');
+  lbl.className = 'weight-label';
+  lbl.textContent = label;
+
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.className = 'num-input small weight-input';
+  input.min = '0';
+  input.step = '0.5';
+  input.placeholder = '0';
+  if (weightsMap.has(key)) input.value = weightsMap.get(key);
+  input.addEventListener('input', () => {
+    if (input.value === '') weightsMap.delete(key);
+    else weightsMap.set(key, parseFloat(input.value));
+  });
+
+  const unit = document.createElement('span');
+  unit.className = 'unit';
+  unit.textContent = 'Kg';
+
+  wrap.append(lbl, input, unit);
+  return wrap;
+}
+
+// ── Exercises list ──────────────────────────────────────────────────────────
+function renderExercisesList() {
+  el.exercisesList.innerHTML = '';
+  el.exercisesEmpty.classList.toggle('hidden', exercises.length > 0);
+  exercises.forEach(exercise => el.exercisesList.appendChild(createExerciseItem(exercise)));
+}
+
+function createExerciseItem(exercise) {
+  const item = document.createElement('div');
+  item.className = 'exercise-item';
+  item.dataset.id = exercise.id;
+
+  const handle = document.createElement('div');
+  handle.className = 'exercise-drag-handle';
+  for (let i = 0; i < 6; i++) handle.appendChild(document.createElement('i'));
+  handle.addEventListener('pointerdown', (e) => startExerciseDrag(e, item));
+
+  const nameCol = document.createElement('div');
+  nameCol.className = 'exercise-name-col';
+  if (exercise.nameA !== undefined && exercise.nameB !== undefined) {
+    nameCol.appendChild(createExerciseNameLine(exercise.nameA));
+    nameCol.appendChild(createExerciseNameLine(exercise.nameB));
+  } else {
+    nameCol.appendChild(createExerciseNameLine(exercise.name));
+  }
+
+  const playBtn = document.createElement('button');
+  playBtn.className = 'exercise-btn exercise-btn-play';
+  playBtn.textContent = '▶';
+  playBtn.addEventListener('click', () => {
+    showExercisePreview(exercise);
+  });
+
+  const editBtn = document.createElement('button');
+  editBtn.className = 'exercise-btn exercise-btn-edit';
+  editBtn.textContent = '✎';
+  editBtn.addEventListener('click', () => {
+    applyConfigToForm(exercise.config);
+    editingExerciseId = exercise.id;
+    isEditingExercise = true;
+    updateEditingUI();
+    panels.config.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  item.append(handle, nameCol, playBtn, editBtn);
+  return item;
+}
+
+function createExerciseNameLine(text) {
+  const line = document.createElement('div');
+  line.className = 'exercise-name-line';
+
+  const span = document.createElement('span');
+  span.className = 'exercise-name-text';
+  span.textContent = text;
+  line.appendChild(span);
+
+  setupNameMarquee(line, span);
+  return line;
+}
+
+// Scrolls the full name at a constant pace when it doesn't fit, jumping back
+// to the start and pausing 1.5s before repeating — instead of ellipsis.
+function setupNameMarquee(lineEl, textEl) {
+  requestAnimationFrame(() => {
+    const overflow = textEl.scrollWidth - lineEl.clientWidth;
+    if (overflow <= 2) return;
+    const SPEED = 40;        // px/s — constant scroll pace regardless of name length
+    const START_PAUSE = 1.5; // s — wait at the start before it begins moving
+    const END_PAUSE = 1.5;   // s — wait at the end, holding the last letters, before jumping back
+    const scrollTime = overflow / SPEED;
+    const total = START_PAUSE + scrollTime + END_PAUSE;
+    const scrollStart = START_PAUSE / total;
+    const scrollEnd = (START_PAUSE + scrollTime) / total;
+    // Holding the last keyframe at -overflow through 100% means the pause
+    // happens at the end; looping (iterations: Infinity) then snaps straight
+    // back to the 0% keyframe with no animated transition — an instant jump.
+    textEl.animate([
+      { transform: 'translateX(0)', offset: 0 },
+      { transform: 'translateX(0)', offset: scrollStart },
+      { transform: `translateX(${-overflow}px)`, offset: scrollEnd },
+      { transform: `translateX(${-overflow}px)`, offset: 1 },
+    ], { duration: total * 1000, iterations: Infinity, easing: 'linear' });
+  });
+}
+
+// ── Exercise preview (read-only screen shown before starting) ─────────────
+// "A"/"B" keys look like "N-1"/"N-2" (superserie) or plain "N" otherwise —
+// same scheme as falloSeriesSet/weightsMap. "-2" is always exercise B.
+function accentColorForKey(key) {
+  return key.endsWith('-2') ? 'var(--exercise-b)' : 'var(--exercise-a)';
+}
+
+function formatKeyTag(key, isSuper) {
+  if (!isSuper) return `S.${key}`;
+  const [serie, ex] = key.split('-');
+  return `S.${serie}${ex === '1' ? 'A' : 'B'}`;
+}
+
+function showExercisePreview(exercise) {
+  previewingExerciseId = exercise.id;
+  renderExercisePreview(exercise);
+  showPanel('preview');
+}
+
+function renderExercisePreview(exercise) {
+  const config = exercise.config;
+  const isSuper = config.superEnabled;
+
+  // Titles
+  el.previewTitles.innerHTML = '';
+  if (isSuper) {
+    el.previewTitles.appendChild(makePreviewTitleLine('A', exercise.nameA ?? exercise.name ?? '', 'var(--exercise-a)'));
+    el.previewTitles.appendChild(makePreviewTitleLine('B', exercise.nameB ?? '', 'var(--exercise-b)'));
+  } else {
+    el.previewTitles.appendChild(makePreviewTitleLine(null, exercise.name, 'var(--exercise-a)'));
+  }
+
+  // Superserie — read-only one-liner, hidden entirely if not superserie
+  el.previewSuperRow.classList.toggle('hidden', !isSuper);
+  if (isSuper) {
+    el.previewSuperValue.textContent = `⏸️ Short rest entre serie A y B de: ${config.superRest}s`;
+  }
+
+  // Series + Reps
+  el.previewSeriesReps.innerHTML = '';
+  el.previewSeriesReps.appendChild(makeReadonlyField('🔢 Series', config.totalSeries));
+  if (isSuper && config.repsDistintas) {
+    el.previewSeriesReps.appendChild(makeReadonlyField('🔁 Reps', config.totalReps, 'A', 'var(--exercise-a)'));
+    el.previewSeriesReps.appendChild(makeReadonlyField('🔁 Reps', config.totalReps2, 'B', 'var(--exercise-b)'));
+  } else {
+    el.previewSeriesReps.appendChild(makeReadonlyField('🔁 Reps', config.totalReps));
+  }
+
+  // Al fallo — only the series actually marked, tagged and colored
+  const falloKeys = config.falloSeries || [];
+  el.previewFalloRow.classList.toggle('hidden', falloKeys.length === 0);
+  el.previewFalloTags.innerHTML = '';
+  falloKeys.forEach((key, i) => {
+    if (i > 0) el.previewFalloTags.appendChild(document.createTextNode(', '));
+    const tag = document.createElement('span');
+    tag.className = 'preview-tag';
+    tag.style.color = accentColorForKey(key);
+    tag.textContent = formatKeyTag(key, isSuper);
+    el.previewFalloTags.appendChild(tag);
+  });
+
+  // Weights — always shown for every serie (even at 0/unrecorded, shown as
+  // "-", since an exercise may sometimes be bodyweight-only). A/B pairs are
+  // wrapped together so a line-break moves both, never just one.
+  el.previewWeightsList.innerHTML = '';
+  const weights = config.weights || {};
+  for (let i = 1; i <= config.totalSeries; i++) {
+    if (isSuper) {
+      const pair = document.createElement('div');
+      pair.className = 'weight-pair';
+      pair.appendChild(makeWeightDisplay(`${i}-1`, weights[`${i}-1`], isSuper));
+      pair.appendChild(makeWeightDisplay(`${i}-2`, weights[`${i}-2`], isSuper));
+      el.previewWeightsList.appendChild(pair);
+    } else {
+      el.previewWeightsList.appendChild(makeWeightDisplay(`${i}`, weights[`${i}`], isSuper));
+    }
+  }
+  el.previewWeightsRow.classList.remove('hidden');
+
+  // Intensidad — last 3 records (most recent first), only if any exist.
+  // A/B rows get their matching accent color; the legend goes right after
+  // the last row shown (B in superserie, A otherwise).
+  let anyIntensity;
+  if (isSuper) {
+    const hasA = renderIntensityHistory(el.previewIntensityRowA, el.previewIntensityLabelA, el.previewIntensityListA,
+      '💪 Int. A', exercise.intensityLogA, 'var(--exercise-a)');
+    const hasB = renderIntensityHistory(el.previewIntensityRowB, el.previewIntensityLabelB, el.previewIntensityListB,
+      '💪 Int. B', exercise.intensityLogB, 'var(--exercise-b)');
+    anyIntensity = hasA || hasB;
+  } else {
+    anyIntensity = renderIntensityHistory(el.previewIntensityRowA, el.previewIntensityLabelA, el.previewIntensityListA,
+      '💪 Int.', exercise.intensityLog);
+    el.previewIntensityRowB.classList.add('hidden');
+  }
+  el.previewIntensityLegend.classList.toggle('hidden', !anyIntensity);
+  if (anyIntensity) renderIntensityLegend();
+
+  // Descanso interseries
+  el.previewRestSeries.textContent = `${config.restSeries}s`;
+
+  // Fases
+  el.previewPhasesRow.innerHTML = '';
+  if (isSuper && config.fasesDistintas) {
+    el.previewPhasesRow.appendChild(makePhaseSummary('A', config, false, 'var(--exercise-a)'));
+    el.previewPhasesRow.appendChild(makePhaseSummary('B', config, true, 'var(--exercise-b)'));
+  } else {
+    el.previewPhasesRow.appendChild(makePhaseSummary(null, config, false, 'var(--exercise-a)'));
+  }
+}
+
+function makePreviewTitleLine(tag, name, color) {
+  const line = document.createElement('div');
+  line.className = 'preview-title-line';
+  line.style.color = color;
+  line.textContent = tag ? `${tag}: ${name}` : name;
+  return line;
+}
+
+function makeReadonlyField(label, value, tag, color) {
+  const wrap = document.createElement('div');
+  wrap.className = 'readonly-field';
+  if (tag) {
+    const t = document.createElement('span');
+    t.className = 'preview-tag';
+    t.style.color = color;
+    t.textContent = tag;
+    wrap.appendChild(t);
+  }
+  const lbl = document.createElement('span');
+  lbl.className = 'config-label';
+  lbl.textContent = label;
+  const val = document.createElement('span');
+  val.className = 'readonly-value';
+  val.textContent = value;
+  wrap.append(lbl, val);
+  return wrap;
+}
+
+function makeWeightDisplay(key, value, isSuper) {
+  const item = document.createElement('div');
+  item.className = 'weight-item';
+
+  const tag = document.createElement('span');
+  tag.className = 'weight-label preview-tag';
+  tag.style.color = accentColorForKey(key);
+  tag.textContent = formatKeyTag(key, isSuper);
+
+  const val = document.createElement('span');
+  val.className = 'readonly-value';
+  val.textContent = value ? `${value} Kg` : '-';
+
+  item.append(tag, val);
+  return item;
+}
+
+// Last 3 intensity records for one exercise slot, most recent first
+const INTENSITY_POSITION_LABELS = ['Última', 'Anterior', 'Anteanterior'];
+
+function renderIntensityHistory(rowEl, labelEl, listEl, label, log, color) {
+  const entries = (log || []).slice(-3).reverse();
+  rowEl.classList.toggle('hidden', entries.length === 0);
+  if (entries.length === 0) return false;
+  labelEl.textContent = label;
+  labelEl.style.color = color || '';
+  listEl.innerHTML = '';
+  entries.forEach((record, i) => listEl.appendChild(createIntensityChip(record, INTENSITY_POSITION_LABELS[i])));
+  return true;
+}
+
+// Icon + caption key so the history chips (icon-only) stay legible
+function renderIntensityLegend() {
+  el.previewIntensityLegend.innerHTML = '';
+  FEELING_OPTIONS.forEach(opt => {
+    const item = document.createElement('div');
+    item.className = 'intensity-legend-item';
+
+    const icon = document.createElement('img');
+    icon.className = 'intensity-legend-icon';
+    icon.src = opt.icon;
+    icon.alt = opt.label;
+
+    const label = document.createElement('span');
+    label.className = 'intensity-legend-label';
+    label.textContent = opt.label;
+
+    item.append(icon, label);
+    el.previewIntensityLegend.appendChild(item);
+  });
+}
+
+function createIntensityChip(record, positionLabel) {
+  const wrap = document.createElement('div');
+  wrap.className = 'intensity-chip-wrap';
+
+  const chip = document.createElement('div');
+  chip.className = 'intensity-chip';
+
+  const opt = FEELING_OPTIONS.find(o => o.key === record.feeling);
+  const icon = document.createElement('img');
+  icon.className = 'intensity-chip-emoji';
+  if (opt) { icon.src = opt.icon; icon.alt = opt.label; }
+
+  const val = document.createElement('span');
+  val.className = 'readonly-value';
+  val.textContent = record.weight ? `${record.weight} Kg` : '-';
+
+  chip.append(icon, val);
+
+  const when = document.createElement('span');
+  when.className = 'intensity-chip-when';
+  when.textContent = positionLabel;
+
+  wrap.append(chip, when);
+  return wrap;
+}
+
+function makePhaseSummary(tag, config, useB, color) {
+  const wrap = document.createElement('div');
+  wrap.className = 'preview-phase-set';
+
+  if (tag) {
+    const t = document.createElement('span');
+    t.className = 'preview-tag';
+    t.style.color = color;
+    t.textContent = `${tag}:`;
+    wrap.appendChild(t);
+  }
+
+  const conc  = useB ? config.phaseConc2  : config.phaseConc;
+  const isom  = useB ? config.phaseIsom2  : config.phaseIsom;
+  const excen = useB ? config.phaseExcen2 : config.phaseExcen;
+  const pausa = useB ? config.phasePausa2 : config.phasePausa;
+
+  // Same colors as the phase labels in the editable module (.phase-label.*)
+  const phases = [{ label: 'Concen.', value: conc, color: 'var(--green)' }];
+  if (isom > 0) phases.push({ label: 'Isom.', value: isom, color: 'var(--blue)' });
+  phases.push({ label: 'Excen.', value: excen, color: 'var(--orange)' });
+  if (pausa > 0) phases.push({ label: 'Pausa', value: pausa, color: 'var(--gray)' });
+
+  // Each phase's name + seconds is one atomic unit — if it wraps to the
+  // next line, the name goes with it instead of splitting from its value.
+  phases.forEach(p => {
+    const item = document.createElement('span');
+    item.className = 'preview-phase-item';
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'preview-phase-name';
+    nameSpan.style.color = p.color;
+    nameSpan.textContent = p.label;
+
+    item.appendChild(nameSpan);
+    item.appendChild(document.createTextNode(` ${p.value}s`));
+    wrap.appendChild(item);
+  });
+
+  return wrap;
+}
+
+// Moves the real, editable Series module + Guardar/Iniciar into the preview
+// screen (instead of navigating to the config screen to edit) — reuses every
+// bit of existing editable-form logic since it's the actual same DOM nodes.
+// Whether the Series module was collapsed on the main config screen right
+// before Editar forced it open here — restored as-is when editing ends,
+// without ever touching the persisted collapse preference (localStorage).
+let seriesWasCollapsedBeforeInlineEdit = false;
+
+function enterInlinePreviewEdit() {
+  inlineEditFromPreview = true;
+
+  seriesWasCollapsedBeforeInlineEdit = el.seriesModule.classList.contains('collapsed');
+  if (seriesWasCollapsedBeforeInlineEdit) {
+    el.seriesModule.classList.remove('collapsed');
+    el.actionsStack.classList.remove('collapsed');
+    el.seriesModuleBody.style.maxHeight = '';
+    el.actionsStack.style.maxHeight = '';
+    el.seriesCollapseBtn.setAttribute('aria-expanded', 'true');
+  }
+
+  // Collapsing has no use while editing inline here (it would just hide the
+  // fields the user is trying to edit) — remove the option entirely, without
+  // touching how collapse behaves back on the normal config screen.
+  el.seriesCollapseBtn.classList.add('hidden');
+
+  el.previewSeriesModule.classList.add('hidden');
+  el.previewActions.classList.add('hidden');
+  el.previewEditSlot.classList.remove('hidden');
+  el.previewEditSlot.appendChild(el.seriesModule);
+  el.previewEditSlot.appendChild(el.actionsStack);
+}
+
+// Moves them back to their normal place in #config-panel and shows the
+// read-only summary again, staying on the preview screen throughout.
+function exitInlinePreviewEdit() {
+  if (!inlineEditFromPreview) return;
+  inlineEditFromPreview = false;
+  panels.config.insertBefore(el.seriesModule, el.exercisesRow);
+  panels.config.insertBefore(el.actionsStack, el.exercisesRow);
+  el.previewEditSlot.classList.add('hidden');
+  el.previewSeriesModule.classList.remove('hidden');
+  el.previewActions.classList.remove('hidden');
+  el.seriesCollapseBtn.classList.remove('hidden');
+
+  if (seriesWasCollapsedBeforeInlineEdit) {
+    el.seriesModule.classList.add('collapsed');
+    el.actionsStack.classList.add('collapsed');
+    el.seriesModuleBody.style.maxHeight = '0px';
+    el.actionsStack.style.maxHeight = '0px';
+    el.seriesCollapseBtn.setAttribute('aria-expanded', 'false');
+  }
+}
+
+el.btnBackPreview.addEventListener('click', () => {
+  if (inlineEditFromPreview) {
+    cancelEditingExercise(); // asks for confirmation, reverts, stays on preview
+    return;
+  }
+  showPanel('config');
+});
+
+el.btnPreviewEdit.addEventListener('click', () => {
+  const exercise = exercises.find(e => e.id === previewingExerciseId);
+  if (!exercise) return;
+  applyConfigToForm(exercise.config);
+  editingExerciseId = exercise.id;
+  isEditingExercise = true;
+  updateEditingUI();
+  enterInlinePreviewEdit();
+});
+
+el.btnPreviewStart.addEventListener('click', () => {
+  const exercise = exercises.find(e => e.id === previewingExerciseId);
+  if (!exercise) return;
+  applyConfigToForm(exercise.config);
+  startWorkout(exercise.id);
+});
+
+// ── Editing-mode UI (pink border, name label, Guardar/Cancelar swap) ───────
+let wasEditingExercise = false;
+
+// Glass-glint sweep, played once right when edit mode ends
+function playSeriesShine() {
+  const shine = el.seriesModuleShine;
+  shine.classList.remove('sweep');
+  void shine.offsetWidth; // force reflow so the animation restarts reliably
+  shine.classList.add('sweep');
+}
+
+// Without this, ".sweep" stays attached after the animation ends, and CSS
+// animations restart on their own whenever the element toggles out of and
+// back into display:none (e.g. leaving/returning from the exercise preview
+// panel) — replaying the shine on plain navigation instead of only on save.
+el.seriesModuleShine.addEventListener('animationend', () => {
+  el.seriesModuleShine.classList.remove('sweep');
+});
+
+function updateEditingUI() {
+  const exercise = isEditingExercise ? exercises.find(e => e.id === editingExerciseId) : null;
+
+  if (wasEditingExercise && !isEditingExercise) playSeriesShine();
+  wasEditingExercise = isEditingExercise;
+
+  el.seriesModule.classList.toggle('editing', isEditingExercise);
+  el.seriesEditingLabel.classList.toggle('hidden', !isEditingExercise);
+  el.seriesEditingNames.classList.toggle('hidden', !isEditingExercise);
+  el.seriesEditingNames.innerHTML = '';
+
+  if (exercise) {
+    if (exercise.nameA !== undefined && exercise.nameB !== undefined) {
+      el.seriesEditingNames.appendChild(createEditingNameRow('A', exercise.nameA));
+      el.seriesEditingNames.appendChild(createEditingNameRow('B', exercise.nameB));
+    } else {
+      el.seriesEditingNames.appendChild(createEditingNameRow(null, exercise.name));
+    }
+  }
+
+  el.btnSaveExercise.textContent = isEditingExercise ? 'Guardar Cambios' : 'Guardar';
+  el.btnStart.textContent = isEditingExercise ? 'Cancelar' : 'INICIAR';
+  el.btnStart.classList.toggle('btn-cancel-edit', isEditingExercise);
+}
+
+function createEditingNameRow(slotLabel, name) {
+  const row = document.createElement('div');
+  row.className = 'editing-name-row';
+
+  if (slotLabel) {
+    const tag = document.createElement('span');
+    tag.className = 'editing-name-tag';
+    tag.textContent = slotLabel;
+    row.appendChild(tag);
+  }
+
+  const text = document.createElement('span');
+  text.className = 'editing-name-text';
+  text.textContent = name;
+  row.appendChild(text);
+
+  const btn = document.createElement('button');
+  btn.className = 'editing-name-edit-btn';
+  btn.textContent = '✎';
+  btn.addEventListener('click', () => openRenameModal(slotLabel || 'single'));
+  row.appendChild(btn);
+
+  return row;
+}
+
+function cancelEditingExercise() {
+  if (!confirm('¿Salir sin guardar los cambios?')) return;
+  const original = exercises.find(e => e.id === editingExerciseId);
+  if (original) applyConfigToForm(original.config);
+  editingExerciseId = null;
+  isEditingExercise = false;
+  updateEditingUI();
+  if (inlineEditFromPreview) {
+    exitInlinePreviewEdit();
+    if (original) renderExercisePreview(original);
+  }
+}
+
+// ── Rename modal (pencil next to each name while editing) ──────────────────
+let renamingSlot = null; // 'single' | 'A' | 'B'
+
+function openRenameModal(slot) {
+  const exercise = exercises.find(e => e.id === editingExerciseId);
+  if (!exercise) return;
+  renamingSlot = slot;
+  const current = slot === 'A' ? exercise.nameA : slot === 'B' ? exercise.nameB : exercise.name;
+  el.renameExerciseInput.value = current || '';
+  el.renameExerciseModal.classList.remove('hidden');
+  setTimeout(() => el.renameExerciseInput.focus(), 50);
+}
+
+function closeRenameModal() {
+  el.renameExerciseModal.classList.add('hidden');
+  renamingSlot = null;
+}
+
+function confirmRename() {
+  const newName = el.renameExerciseInput.value.trim();
+  if (!newName) { el.renameExerciseInput.focus(); return; }
+  const exercise = exercises.find(e => e.id === editingExerciseId);
+  if (exercise) {
+    if (renamingSlot === 'A') exercise.nameA = newName;
+    else if (renamingSlot === 'B') exercise.nameB = newName;
+    else exercise.name = newName;
+    if (renamingSlot === 'A' || renamingSlot === 'B') {
+      exercise.name = `${exercise.nameA} / ${exercise.nameB}`;
+    }
+    saveExercises();
+    renderExercisesList();
+    updateEditingUI();
+  }
+  closeRenameModal();
+}
+
+el.renameExerciseConfirm.addEventListener('click', confirmRename);
+el.renameExerciseCancel.addEventListener('click', closeRenameModal);
+el.renameExerciseBackdrop.addEventListener('click', closeRenameModal);
+el.renameExerciseInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') confirmRename();
+  if (e.key === 'Escape') closeRenameModal();
+});
+
+// ── Save-exercise modal ─────────────────────────────────────────────────────
+function openSaveExerciseModal() {
+  const existing = editingExerciseId && exercises.find(e => e.id === editingExerciseId);
+  const superOn = el.toggleSuper.checked;
+
+  el.saveExerciseNameSuper.classList.toggle('hidden', !superOn);
+  el.saveExerciseNameInput.classList.toggle('hidden', superOn);
+
+  if (superOn) {
+    el.saveExerciseNameAInput.value = existing ? (existing.nameA ?? existing.name ?? '') : '';
+    el.saveExerciseNameBInput.value = existing ? (existing.nameB ?? '') : '';
+  } else {
+    el.saveExerciseNameInput.value = existing ? (existing.name ?? '') : '';
+  }
+
+  el.saveExerciseModal.classList.remove('hidden');
+  setTimeout(() => (superOn ? el.saveExerciseNameAInput : el.saveExerciseNameInput).focus(), 50);
+}
+
+function closeSaveExerciseModal() {
+  el.saveExerciseModal.classList.add('hidden');
+}
+
+function confirmSaveExercise() {
+  const superOn = el.toggleSuper.checked;
+  let name, nameA, nameB;
+
+  if (superOn) {
+    nameA = el.saveExerciseNameAInput.value.trim();
+    nameB = el.saveExerciseNameBInput.value.trim();
+    if (!nameA) { el.saveExerciseNameAInput.focus(); return; }
+    if (!nameB) { el.saveExerciseNameBInput.focus(); return; }
+    name = `${nameA} / ${nameB}`;
+  } else {
+    name = el.saveExerciseNameInput.value.trim();
+    if (!name) { el.saveExerciseNameInput.focus(); return; }
+  }
+
+  const config = serializeCurrentConfig();
+  const entry = superOn ? { name, nameA, nameB, config } : { name, config };
+  const existingIndex = editingExerciseId ? exercises.findIndex(e => e.id === editingExerciseId) : -1;
+  if (existingIndex !== -1) {
+    exercises[existingIndex] = { id: editingExerciseId, ...entry };
+  } else {
+    editingExerciseId = makeExerciseId();
+    exercises.push({ id: editingExerciseId, ...entry });
+  }
+  saveExercises();
+  renderExercisesList();
+  closeSaveExerciseModal();
+}
+
+// Editing an existing exercise: "Guardar Cambios" saves the current form's
+// config straight away (name/nameA/nameB are untouched — those are only
+// changed via the ✎ next to each name) and exits edit mode. No popup.
+function saveEditedExerciseDirectly() {
+  const idx = exercises.findIndex(e => e.id === editingExerciseId);
+  if (idx === -1) return;
+  exercises[idx] = { ...exercises[idx], config: serializeCurrentConfig() };
+  saveExercises();
+  renderExercisesList();
+  editingExerciseId = null;
+  isEditingExercise = false;
+  updateEditingUI();
+  if (inlineEditFromPreview) {
+    exitInlinePreviewEdit();
+    renderExercisePreview(exercises[idx]);
+  }
+}
+
+el.btnSaveExercise.addEventListener('click', () => {
+  if (isEditingExercise) saveEditedExerciseDirectly();
+  else openSaveExerciseModal();
+});
+el.saveExerciseConfirm.addEventListener('click', confirmSaveExercise);
+el.saveExerciseCancel.addEventListener('click', closeSaveExerciseModal);
+el.saveExerciseBackdrop.addEventListener('click', closeSaveExerciseModal);
+[el.saveExerciseNameInput, el.saveExerciseNameAInput, el.saveExerciseNameBInput].forEach(input => {
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') confirmSaveExercise();
+    if (e.key === 'Escape') closeSaveExerciseModal();
+  });
+});
+
+// ── Reorder exercises (Pointer Events — native HTML5 drag doesn't fire on
+//    touch in several mobile browsers, and this is a touch-first PWA) ──────
+function getDragAfterElement(container, y) {
+  const els = [...container.querySelectorAll('.exercise-item:not(.dragging)')];
+  return els.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - (box.top + box.height / 2);
+    if (offset < 0 && offset > closest.offset) return { offset, element: child };
+    return closest;
+  }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+}
+
+function startExerciseDrag(e, item) {
+  e.preventDefault();
+  const handle = e.currentTarget;
+  const list = el.exercisesList;
+  let startY = e.clientY;
+  item.classList.add('dragging');
+  item.style.position = 'relative';
+
+  function onMove(ev) {
+    const afterEl = getDragAfterElement(list, ev.clientY);
+    const currentNext = item.nextElementSibling;
+    if (afterEl !== item && afterEl !== currentNext) {
+      const prevTop = item.getBoundingClientRect().top;
+      if (afterEl == null) list.appendChild(item);
+      else list.insertBefore(item, afterEl);
+      const newTop = item.getBoundingClientRect().top;
+      startY += (newTop - prevTop);
+    }
+    item.style.transform = `translateY(${ev.clientY - startY}px)`;
+  }
+
+  function onUp(ev) {
+    handle.releasePointerCapture(ev.pointerId);
+    handle.removeEventListener('pointermove', onMove);
+    handle.removeEventListener('pointerup', onUp);
+    handle.removeEventListener('pointercancel', onUp);
+    item.classList.remove('dragging');
+    item.style.transform = '';
+    item.style.position = '';
+    syncExercisesOrderFromDOM();
+  }
+
+  handle.setPointerCapture(e.pointerId);
+  handle.addEventListener('pointermove', onMove);
+  handle.addEventListener('pointerup', onUp);
+  handle.addEventListener('pointercancel', onUp);
+}
+
+function syncExercisesOrderFromDOM() {
+  const ids = [...el.exercisesList.querySelectorAll('.exercise-item')].map(i => i.dataset.id);
+  exercises.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+  saveExercises();
+}
+
+// ── Series module collapse (persisted, animated) ────────────────────────────
+const SERIES_COLLAPSED_KEY = 'gym-timer-series-collapsed';
+
+// Animates max-height from/to the element's real content height, so the
+// collapse/expand is proportional instead of an instant .hidden toggle.
+// Measures scrollHeight with maxHeight momentarily released to 'none' —
+// avoids any ambiguity from measuring while still constrained to 0.
+function animateCollapse(element, collapsed) {
+  if (collapsed) {
+    const prev = element.style.maxHeight;
+    element.style.maxHeight = 'none';
+    const full = element.scrollHeight;
+    element.style.maxHeight = prev || full + 'px';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        element.style.maxHeight = '0px';
+      });
+    });
+  } else {
+    const prev = element.style.maxHeight;
+    element.style.maxHeight = 'none';
+    const full = element.scrollHeight;
+    element.style.maxHeight = prev;
+    requestAnimationFrame(() => {
+      element.style.maxHeight = full + 'px';
+    });
+    const onEnd = (e) => {
+      if (e.propertyName !== 'max-height') return;
+      element.style.maxHeight = '';
+      element.removeEventListener('transitionend', onEnd);
+    };
+    element.addEventListener('transitionend', onEnd);
+  }
+}
+
+function setSeriesCollapsed(collapsed, { animate = true } = {}) {
+  el.seriesModule.classList.toggle('collapsed', collapsed);
+  el.actionsStack.classList.toggle('collapsed', collapsed);
+  el.seriesCollapseBtn.setAttribute('aria-expanded', String(!collapsed));
+  localStorage.setItem(SERIES_COLLAPSED_KEY, String(collapsed));
+
+  if (animate) {
+    animateCollapse(el.seriesModuleBody, collapsed);
+    animateCollapse(el.actionsStack, collapsed);
+  } else {
+    el.seriesModuleBody.style.maxHeight = collapsed ? '0px' : '';
+    el.actionsStack.style.maxHeight = collapsed ? '0px' : '';
+  }
+}
+
+el.seriesCollapseBtn.addEventListener('click', () => {
+  setSeriesCollapsed(!el.seriesModule.classList.contains('collapsed'));
+});
+
+// Apply the stored state on load without animating (avoids a visible flash/slide on first paint)
+setSeriesCollapsed(localStorage.getItem(SERIES_COLLAPSED_KEY) === 'true', { animate: false });
 
 // ── Animation helpers ──────────────────────────────────────────────────────
 function setVisible(element, show, onHidden) {
@@ -779,6 +2044,7 @@ el.toggleSuper.addEventListener('change', () => {
     falloSeriesSet.clear();
     updateFalloSeriesUI();
   }
+  updateWeightsUI();
 });
 
 // ── Toggle: Invertir fases (FLIP animation) ───────────────────────────────
@@ -805,19 +2071,20 @@ el.toggleRepsDistintas.addEventListener('change', () => {
   setVisible(el.repsALabel, on);
 });
 
-// ── Num-series → refresh fallo buttons ────────────────────────────────────
+// ── Num-series → refresh fallo buttons + weights ──────────────────────────
 el.numSeries.addEventListener('input', () => {
   if (el.toggleFallo.checked) updateFalloSeriesUI();
+  updateWeightsUI();
 });
 
 // ── Init disabled states ───────────────────────────────────────────────────
 el.superRest.style.opacity = '0.4';
 
 // ── Rest presets (done panel) ──────────────────────────────────────────────
-document.querySelectorAll('.rest-preset-btn').forEach(btn => {
+document.querySelectorAll('#done-rest-presets .rest-preset-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const isActive = btn.classList.contains('active');
-    document.querySelectorAll('.rest-preset-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#done-rest-presets .rest-preset-btn').forEach(b => b.classList.remove('active'));
     el.doneRestCustomWrap.classList.add('hidden');
     if (isActive) {
       selectedRestSecs = null;
@@ -838,6 +2105,29 @@ el.doneRestCustomInput.addEventListener('input', () => {
   selectedRestSecs = parseInt(el.doneRestCustomInput.value) || null;
 });
 
+// ── Rest presets (quick-rest, config panel) ────────────────────────────────
+// Presets start the toast immediately; the gear button (data-sec="0") opens
+// the toast in custom-input mode instead — startCustomToast() starts it once
+// the user confirms a duration.
+document.querySelectorAll('#quick-rest-presets .rest-preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (toastMode === 'linked') return; // guarded by CSS too, belt & suspenders
+    const isActive = btn.classList.contains('active');
+    document.querySelectorAll('#quick-rest-presets .rest-preset-btn').forEach(b => b.classList.remove('active'));
+    if (isActive) {
+      dismissRestToast();
+      return;
+    }
+    btn.classList.add('active');
+    const sec = parseInt(btn.dataset.sec);
+    if (sec === 0) {
+      showCustomRestInput();
+    } else {
+      startRestToast(sec);
+    }
+  });
+});
+
 // ── Adaptive height (split-view detection) ────────────────────────────────
 function updateLayout() {
   const h = window.innerHeight;
@@ -847,3 +2137,7 @@ function updateLayout() {
 window.addEventListener('resize', updateLayout);
 window.visualViewport?.addEventListener('resize', updateLayout);
 updateLayout();
+
+renderExercisesList();
+updateWeightsUI();
+updateEditingUI();

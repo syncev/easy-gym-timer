@@ -9,12 +9,22 @@
   --green: #00e676;
   --orange: #ff6d00;
   --blue: #4fc3f7;
+  --violet: #b388ff;
+  --edit-pink: #ff2fe0;
+  --red: #ff3b5c;
+  --exercise-a: #14e6c4;
+  --exercise-b: #7a86ff;
   --gray: #888899;
   --bg: #0d0d1a;
   --surface: #1a1a2e;
   --surface2: #252540;
   --text: #e8e8f0;
   --text-dim: #8888aa;
+}
+
+html {
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
@@ -32,6 +42,7 @@ body {
   width: 100%;
   max-width: 420px;
   height: var(--vh, 100dvh);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -72,6 +83,15 @@ body {
   flex-direction: column;
   padding: 20px 18px 16px;
   overflow-y: auto;
+  scrollbar-width: none;      /* Firefox */
+  -ms-overflow-style: none;   /* legacy Edge/IE */
+}
+#config-panel::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+/* Never let flex shrink these below their natural size — when they don't
+   all fit, #config-panel should scroll (overflow-y: auto above), not squish
+   its children into each other. */
+#config-panel > * {
+  flex-shrink: 0;
 }
 
 h1 {
@@ -83,22 +103,215 @@ h1 {
   text-transform: uppercase;
 }
 
-.config-grid {
+.series-module {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  background: var(--surface);
+  border: 2px solid var(--orange);
+  border-radius: 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 0 0 rgba(255, 47, 224, 0);
+  transition: border-color 0.5s ease, box-shadow 0.5s ease;
+}
+.series-module.editing {
+  border-color: var(--edit-pink);
+  box-shadow: 0 0 18px rgba(255, 47, 224, 0.45);
+}
+
+/* "Glass glint" sweep — plays once when exiting edit mode */
+.series-module-shine {
+  position: absolute;
+  left: 0;
+  top: -10px;
+  width: 100%;
+  height: 10px;
+  background: linear-gradient(to bottom,
+    rgba(255, 255, 255, 0)    0%,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0)  100%);
+  pointer-events: none;
+  z-index: 5;
+}
+.series-module-shine.sweep {
+  animation: seriesModuleShineSweep 0.3s ease-out;
+}
+@keyframes seriesModuleShineSweep {
+  from { top: -10px; }
+  to   { top: 100%; }
+}
+
+.series-module-header {
+  display: flex;
+  align-items: center;
   gap: 10px;
+  padding: 13px 16px;
+  border-bottom: 1px solid #333355;
+}
+.series-module.collapsed .series-module-header {
+  border-bottom: none;
+}
+
+.series-module-title-wrap {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.series-module-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--orange);
+  text-align: center;
+}
+
+.series-module-editing {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--edit-pink);
+  text-align: center;
+}
+
+.series-editing-names {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.editing-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.editing-name-tag {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--edit-pink);
+}
+
+.editing-name-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editing-name-edit-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--edit-pink);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 2px;
+}
+
+.module-collapse-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface2);
+  color: var(--orange);
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.3s ease;
+}
+.module-collapse-btn:active { background: #3a3a5a; }
+.series-module.collapsed .module-collapse-btn { transform: rotate(-90deg); }
+
+.series-module-body {
+  overflow: hidden;
+  opacity: 1;
+  transition: max-height 0.32s ease, opacity 0.25s ease;
+}
+.series-module.collapsed .series-module-body {
+  opacity: 0;
 }
 
 .config-row {
-  background: var(--surface);
-  border-radius: 14px;
   padding: 13px 16px;
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
+
+.series-module-body > .config-row:not(:first-child) {
+  border-top: 1px solid #333355;
+}
+
+.actions-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin-top: 14px;
+  overflow: hidden;
+  opacity: 1;
+  transition: max-height 0.32s ease, opacity 0.25s ease, margin-top 0.32s ease;
+}
+/* Prevent flex from shrinking these below their natural size while the
+   container's max-height is being animated during collapse/expand */
+.actions-stack > * {
+  flex-shrink: 0;
+}
+.actions-stack .btn-primary {
+  margin-top: 0;
+  border: 2px solid var(--orange);
+  box-shadow: 0 0 0 rgba(255, 59, 92, 0);
+  transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease, color 0.5s ease;
+}
+.actions-stack .btn-primary.btn-cancel-edit {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(255, 59, 92, 0.45);
+}
+.actions-stack.collapsed {
+  opacity: 0;
+  margin-top: 0;
+}
+
+.actions-divider {
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  padding: 6px 0;
+}
+
+.btn-save-exercise {
+  width: 100%;
+  background: none;
+  border: 2px solid var(--orange);
+  color: var(--orange);
+  border-radius: 16px;
+  padding: 16px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-save-exercise:active { background: rgba(255, 109, 0, 0.15); }
 
 .config-label {
   font-size: 1rem;
@@ -249,6 +462,31 @@ h1 {
   border-color: var(--green);
   color: #000;
 }
+
+/* Weights row — one Kg input per serie (or per serie+ejercicio in superserie) */
+.weights-row { align-items: flex-start; }
+
+.weights-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+}
+
+.weight-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.weight-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.weight-input { width: 54px; }
 
 /* Buttons */
 .btn-primary {
@@ -558,6 +796,31 @@ h1 {
 }
 #rest-toast-close:active { background: #3a3a5a; }
 
+.rest-toast-custom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.rest-toast-custom .num-input.small { width: 64px; }
+
+.btn-toast-start {
+  background: var(--green);
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+.btn-toast-start:active { opacity: 0.8; }
+
 .rest-toast-bar-wrap {
   height: 4px;
   background: var(--surface2);
@@ -578,10 +841,15 @@ h1 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 24px;
   gap: 24px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+#done-panel::-webkit-scrollbar { display: none; }
+#done-panel > * { flex-shrink: 0; }
 #done-icon { font-size: 6rem; }
 #done-text { font-size: 1.6rem; font-weight: 700; color: var(--green); text-align: center; }
 
@@ -670,6 +938,517 @@ h1 {
   gap: 8px;
 }
 
+/* Quick-rest card (config panel, below the title) */
+.quick-rest-row {
+  background: var(--surface);
+  border: 2px solid var(--blue);
+  border-radius: 14px;
+  padding: 13px 16px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.quick-rest-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--blue);
+  text-align: center;
+}
+
+#quick-rest-presets {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  justify-content: center;
+  width: 100%;
+}
+
+#quick-rest-presets .rest-preset-btn {
+  padding: 6px 0;
+  font-size: 0.75rem;
+  border-width: 1px;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.quick-rest-row.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* ========== EXERCISES ROW ========== */
+.exercises-row {
+  background: var(--surface);
+  border: 2px solid var(--violet);
+  border-radius: 14px;
+  padding: 13px 16px;
+  margin-top: 14px;
+  margin-bottom: 14px;
+}
+
+.exercises-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.exercises-title {
+  flex: 1;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--violet);
+  text-align: center;
+}
+
+.exercises-backup-btns {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.exercises-backup-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface2);
+  color: var(--violet);
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.exercises-backup-btn:active { background: #3a3a5a; }
+
+.exercises-empty {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 6px 0;
+}
+
+.exercise-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+}
+.exercise-item:not(:first-child) { border-top: 1px solid #333355; }
+.exercise-item.dragging {
+  opacity: 0.6;
+  background: var(--surface2);
+  border-radius: 10px;
+}
+
+.exercise-drag-handle {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 3px;
+  place-items: center;
+  cursor: grab;
+  touch-action: none;
+}
+.exercise-drag-handle > i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  display: block;
+}
+
+.exercise-name-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+
+.exercise-name-line {
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+}
+
+.exercise-name-text {
+  display: inline-block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.exercise-btn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.exercise-btn:active { background: #3a3a5a; }
+.exercise-btn-play { color: var(--green); }
+
+/* ========== MODAL ========== */
+#save-exercise-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.modal-box {
+  position: relative;
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 20px;
+  width: 85%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
+.modal-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+}
+
+.modal-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 2px solid #333355;
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 1rem;
+  padding: 12px 14px;
+  outline: none;
+}
+.modal-input:focus { border-color: var(--orange); }
+
+.save-exercise-name-super {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.save-exercise-name-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.save-exercise-name-group .config-label {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-modal-secondary {
+  flex: 1;
+  background: var(--surface2);
+  border: none;
+  color: var(--text-dim);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-modal-secondary:active { background: #3a3a5a; }
+
+.btn-modal-primary.btn-primary {
+  flex: 1;
+  width: auto;
+  margin-top: 0;
+  padding: 12px;
+  font-size: 0.95rem;
+}
+
+/* ========== REGISTER INTENSITY (done panel, inline) ========== */
+#intensity-register {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.intensity-saved-msg {
+  color: var(--green);
+  font-weight: 700;
+  text-align: center;
+}
+
+#intensity-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.intensity-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.intensity-section-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--violet);
+  text-align: center;
+}
+
+.intensity-weight {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.intensity-options {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+}
+
+.intensity-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: var(--surface2);
+  border: 2px solid #333355;
+  border-radius: 8px;
+  padding: 5px 2px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.intensity-option.active {
+  background: var(--green);
+  border-color: var(--green);
+}
+.intensity-option.active .intensity-caption { color: #000; }
+
+.intensity-emoji {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.intensity-caption {
+  font-size: 0.5rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+#intensity-confirm:disabled {
+  background: var(--surface2);
+  color: var(--text-dim);
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Intensity history chips (exercise preview) — same look as weight-item */
+.intensity-chip-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.intensity-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.intensity-chip-when {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+}
+
+/* Legend explaining the history icons — shown below the last intensity row.
+   Reduced side padding (overriding .config-row's) so all 6 fit on one line. */
+#preview-intensity-legend {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.intensity-legend-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 44px;
+}
+
+.intensity-legend-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.intensity-legend-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.15;
+}
+.intensity-chip-emoji {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* ========== EXERCISE PREVIEW PANEL ========== */
+#preview-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 18px 16px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+#preview-panel::-webkit-scrollbar { display: none; }
+#preview-panel > * { flex-shrink: 0; }
+
+#preview-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.preview-titles {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.preview-title-line {
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.readonly-value {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.readonly-field {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.preview-tag {
+  font-weight: 800;
+}
+
+#preview-series-reps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+}
+
+#preview-fallo-tags {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.preview-phase-set {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Name + seconds is one unbreakable unit — wraps as a whole, never split */
+.preview-phase-item {
+  white-space: nowrap;
+}
+.preview-phase-item:not(:first-child)::before {
+  content: '· ';
+  color: var(--text-dim);
+}
+
+.preview-phase-name {
+  font-weight: 800;
+}
+
+#preview-phases-row {
+  gap: 8px;
+  align-items: center;
+}
+
+/* Center every read-only row except the weights list, which keeps its own
+   left-aligned, pair-wrapped layout */
+#preview-panel .config-row {
+  justify-content: center;
+  text-align: center;
+}
+#preview-panel .weights-row {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+/* Keep a serie's A/B weight together — if the pair doesn't fit, both wrap
+   to the next line instead of splitting S.NA from S.NB */
+.weight-pair {
+  display: flex;
+  gap: 12px;
+}
+
 /* ========== COMPACT MODE ==========
    Triggered by JS when window height < 65% of screen height (split-view)
    or < 500px absolute (landscape). Class added to <html> by updateLayout(). */
@@ -678,14 +1457,19 @@ html.compact {
   /* ── Config panel ── */
   & #config-panel { padding: 10px 16px 10px; }
   & h1 { font-size: 1.4rem; margin-bottom: 10px; }
-  & .config-grid { gap: 7px; }
   & .config-row { padding: 9px 14px; }
+  & .quick-rest-row { padding: 9px 14px; margin-bottom: 8px; }
+  & .series-module { margin-bottom: 8px; }
+  & .exercises-row { padding: 9px 14px; margin-top: 8px; margin-bottom: 8px; }
   & .series-reps-row { gap: 5px; }
   & .sr-toggles { gap: 0; }
   & .num-input { height: 40px; font-size: 1.1rem; width: 60px; }
   & .num-input.small { height: 36px; font-size: 0.95rem; width: 48px; }
   & #num-series, & #num-reps, & #num-reps-2 { width: 46px; }
   & .btn-primary { padding: 13px; margin-top: 8px; font-size: 1.1rem; }
+  & .actions-stack { margin-top: 8px; }
+  & .actions-stack .btn-primary { margin-top: 0; }
+  & .btn-save-exercise { padding: 13px; font-size: 1rem; }
 
   /* ── Workout panel ── */
   & #workout-panel { padding: 6px 14px 8px; }
