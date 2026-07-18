@@ -1504,6 +1504,14 @@ function splitExercise(id) {
     };
   }
 
+  // When reps/fases weren't set distinctly for A and B, the "B" form fields
+  // (num-reps-2, phase-*-2) stay hidden and can hold stale values — fall
+  // back to A's shared values instead of trusting them in that case.
+  const repsB = cfg.repsDistintas ? cfg.totalReps2 : cfg.totalReps;
+  const phasesB = cfg.fasesDistintas
+    ? { phaseConc: cfg.phaseConc2, phaseIsom: cfg.phaseIsom2, phaseExcen: cfg.phaseExcen2, phasePausa: cfg.phasePausa2, invertPhases1: cfg.invertPhases2 }
+    : { phaseConc: cfg.phaseConc, phaseIsom: cfg.phaseIsom, phaseExcen: cfg.phaseExcen, phasePausa: cfg.phasePausa, invertPhases1: cfg.invertPhases1 };
+
   const exerciseA = {
     id: makeExerciseId(),
     name: ex.nameA ?? ex.name ?? '',
@@ -1514,7 +1522,7 @@ function splitExercise(id) {
   const exerciseB = {
     id: makeExerciseId(),
     name: ex.nameB ?? '',
-    config: baseConfig(cfg.totalReps2, cfg.phaseConc2, cfg.phaseIsom2, cfg.phaseExcen2, cfg.phasePausa2, cfg.invertPhases2, '-2', '-2'),
+    config: baseConfig(repsB, phasesB.phaseConc, phasesB.phaseIsom, phasesB.phaseExcen, phasesB.phasePausa, phasesB.invertPhases1, '-2', '-2'),
   };
   if (ex.intensityLogB && ex.intensityLogB.length) exerciseB.intensityLog = ex.intensityLogB;
 
