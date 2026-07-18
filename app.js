@@ -1195,13 +1195,12 @@ function updateWeightsUI() {
     if (!validKeys.has(k)) weightsMap.delete(k);
   }
 
-  for (let i = 1; i <= total; i++) {
-    if (superOn) {
-      el.weightsList.appendChild(createWeightInput(`S.${i}A`, `${i}-1`));
-      el.weightsList.appendChild(createWeightInput(`S.${i}B`, `${i}-2`));
-    } else {
-      el.weightsList.appendChild(createWeightInput(`S.${i}`, `${i}`));
-    }
+  if (superOn) {
+    // All of exercise A's series first, then all of B's — not interleaved
+    for (let i = 1; i <= total; i++) el.weightsList.appendChild(createWeightInput(`S.${i}A`, `${i}-1`));
+    for (let i = 1; i <= total; i++) el.weightsList.appendChild(createWeightInput(`S.${i}B`, `${i}-2`));
+  } else {
+    for (let i = 1; i <= total; i++) el.weightsList.appendChild(createWeightInput(`S.${i}`, `${i}`));
   }
 }
 
