@@ -36,6 +36,11 @@
             <button id="btn-merge-cancel" class="exercises-backup-btn hidden" title="Cancelar"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path stroke="currentColor" d="m24.444 24.557l14.142 14.142l2.828 2.828L55.556 55.67"/><path stroke="currentColor" d="M55.556 24.557L41.414 38.699l-2.828 2.828L24.444 55.67"/></g></svg></button>
             <button id="btn-merge-confirm" class="exercises-backup-btn hidden" title="Confirmar unión" disabled><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="m14.121 40.092l15.557 15.556a2 2 0 0 0 2.828 0l32.527-32.527"/></svg></button>
           </div>
+          <div class="exercises-delete-controls" id="exercises-delete-controls">
+            <button id="btn-delete-exercises" class="exercises-backup-btn exercises-delete-btn" title="Eliminar ejercicios"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none"><path fill="currentColor" d="M23 68h34a4 4 0 0 0 4-4V20.5a.5.5 0 0 0-.5-.5h-41a.5.5 0 0 0-.5.5V64a4 4 0 0 0 4 4"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M33 30v28m14-28v28m18-38H15"/><path fill="currentColor" d="m27.855 19.999l-1.564-1.247a2 2 0 0 0 1.564 3.247zm24.29 0v2a2 2 0 0 0 1.563-3.247zm-18.22-7.612v-2a2 2 0 0 0-1.563.752zm12.15 0l1.563-1.248a2 2 0 0 0-1.564-.752zm-18.22 9.612h24.29v-4h-24.29zm1.564-.753l6.07-7.612l-3.127-2.495l-6.07 7.613zm4.506-6.86h12.15v-4h-12.15zm10.586-.752l6.07 7.612l3.127-2.494l-6.07-7.612z"/></g></svg></button>
+            <button id="btn-delete-cancel" class="exercises-backup-btn hidden" title="Cancelar"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path stroke="currentColor" d="m24.444 24.557l14.142 14.142l2.828 2.828L55.556 55.67"/><path stroke="currentColor" d="M55.556 24.557L41.414 38.699l-2.828 2.828L24.444 55.67"/></g></svg></button>
+            <button id="btn-delete-confirm" class="exercises-backup-btn hidden" title="Confirmar eliminación" disabled><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="m14.121 40.092l15.557 15.556a2 2 0 0 0 2.828 0l32.527-32.527"/></svg></button>
+          </div>
           <div class="exercises-title">Ejercicios</div>
           <div class="exercises-backup-btns">
             <button id="btn-export-exercises" class="exercises-backup-btn" title="Exportar a archivo"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(180 40 40)" fill="none"><path fill="currentColor" d="M42 23.241a2 2 0 1 0-4 0zm-4 14.738a2 2 0 1 0 4 0zM42 38a2 2 0 1 0-4 0zm-4 23a2 2 0 0 0 4 0zm0-37.759v14.738h4V23.24zm0 14.76v23h4V38z"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M56 38L42.121 24.121a3 3 0 0 0-4.242 0L24 38"/><path stroke="currentColor" stroke-linecap="round" stroke-width="4" d="M24 15h32"/></g></svg></button>
@@ -252,6 +257,10 @@
         <div id="rest-countdown">90</div>
         <div id="rest-bar-wrap"><div id="rest-bar"></div></div>
       </div>
+      <div id="rest-next-weights" class="hidden">
+        <div class="rest-next-weights-title">Próximos pesos</div>
+        <div id="rest-next-weights-list"></div>
+      </div>
       <div id="rest-controls">
         <button id="btn-play-pause-rest" class="btn-control"><svg class="icon-svg icon-svg-xl" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="currentColor"><path fill-rule="evenodd" d="M36 24v-4a4 4 0 0 0-4-4h-8a4 4 0 0 0-4 4v40a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4zm24 0v-4a4 4 0 0 0-4-4h-8a4 4 0 0 0-4 4v40a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4z" clip-rule="evenodd"/><path d="M36 24h2zm0 32h2zm8-32h2zm0 32h-2zM34 20v4h4v-4zm-10-2h8v-4h-8zm-2 6v-4h-4v4zm0 32V24h-4v32zm0 4v-4h-4v4zm10 2h-8v4h8zm2-6v4h4v-4zm0-32v32h4V24zm24-4v4h4v-4zm-10-2h8v-4h-8zm-2 6v-4h-4v4zm0 32V24h-4v32zm0 4v-4h-4v4zm10 2h-8v4h8zm2-6v4h4v-4zm0-32v32h4V24zm-2 42a6 6 0 0 0 6-6h-4a2 2 0 0 1-2 2zm-8-52a6 6 0 0 0-6 6h4a2 2 0 0 1 2-2zm14 6a6 6 0 0 0-6-6v4a2 2 0 0 1 2 2zM32 66a6 6 0 0 0 6-6h-4a2 2 0 0 1-2 2zm10-6a6 6 0 0 0 6 6v-4a2 2 0 0 1-2-2zM24 14a6 6 0 0 0-6 6h4a2 2 0 0 1 2-2zm-6 46a6 6 0 0 0 6 6v-4a2 2 0 0 1-2-2zm20-40a6 6 0 0 0-6-6v4a2 2 0 0 1 2 2z"/></g></svg></button>
         <button id="btn-skip-rest" class="btn-primary">Saltar descanso</button>
@@ -373,7 +382,7 @@
   </div>
 
   <!-- Save-exercise modal -->
-  <div id="save-exercise-modal" class="hidden">
+  <div id="save-exercise-modal" class="app-modal hidden">
     <div class="modal-backdrop" id="save-exercise-backdrop"></div>
     <div class="modal-box">
       <div class="modal-title">Guardar ejercicio</div>
@@ -396,7 +405,7 @@
   </div>
 
   <!-- Rename-exercise-name modal (edit mode, pencil next to each name) -->
-  <div id="rename-exercise-modal" class="hidden">
+  <div id="rename-exercise-modal" class="app-modal hidden">
     <div class="modal-backdrop" id="rename-exercise-backdrop"></div>
     <div class="modal-box">
       <div class="modal-title">Editar nombre</div>
@@ -404,6 +413,21 @@
       <div class="modal-actions">
         <button id="rename-exercise-cancel" class="btn-modal-secondary">Cancelar</button>
         <button id="rename-exercise-confirm" class="btn-primary btn-modal-primary">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generic confirm/alert modal — replaces native confirm()/alert() so the
+       dialog matches the app's design and reads "Gym Timer" instead of the
+       browser's own "site says" chrome. -->
+  <div id="app-confirm-modal" class="app-modal hidden">
+    <div class="modal-backdrop" id="app-confirm-backdrop"></div>
+    <div class="modal-box" id="app-confirm-box">
+      <div class="modal-kicker">Gym Timer</div>
+      <div class="modal-message" id="app-confirm-message"></div>
+      <div class="modal-actions">
+        <button id="app-confirm-cancel" class="btn-modal-secondary">Cancelar</button>
+        <button id="app-confirm-confirm" class="btn-primary btn-modal-primary">Confirmar</button>
       </div>
     </div>
   </div>

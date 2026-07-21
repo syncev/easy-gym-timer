@@ -21,26 +21,35 @@ function beepPhase()  { beep(660, 0.07, 0.25); }
 function beepRest()   { beep(440, 0.15, 0.3, 'triangle'); }
 function beepDone()   { beep(1046, 0.2, 0.4); setTimeout(() => beep(1318, 0.3, 0.4), 220); }
 
+// Haptic pulse to accompany rest-countdown alarm sounds (20s/15s/10s bells,
+// "about to finish" GO chord) — silently no-ops on devices/browsers without
+// the Vibration API (e.g. iOS Safari).
+function vibrate(pattern) {
+  if (navigator.vibrate) navigator.vibrate(pattern);
+}
+
 // Rising pitch tick: flat low for counts >5, rising 440→880 for last 5
 function beepCountdownTick(count) {
   beep(count > 5 ? 440 : 440 + (5 - count) * 110, 0.09, count > 5 ? 0.18 : 0.28);
 }
-// Ascending chord for "GO"
+// Ascending chord for "GO" — also marks the rest period actually finishing
 function beepCountdownGo() {
   beep(1046, 0.12, 0.45);
   setTimeout(() => beep(1318, 0.12, 0.45), 110);
   setTimeout(() => beep(1568, 0.22, 0.45), 220);
+  vibrate([120, 80, 120]);
 }
 // Grave tone for each second of the excentric phase
 function beepExcen() { beep(310, 0.13, 0.32, 'triangle'); }
 // Soft bell at 20s remaining
-function beepBell20() { beep(660, 0.7, 0.22, 'sine'); }
+function beepBell20() { beep(660, 0.7, 0.22, 'sine'); vibrate(150); }
 // Single warm bell at 15s remaining
-function beepBell15() { beep(880, 0.8, 0.28, 'sine'); }
+function beepBell15() { beep(880, 0.8, 0.28, 'sine'); vibrate(150); }
 // Two-note bell at 10s remaining (more urgent)
 function beepBell10() {
   beep(1046, 0.6, 0.3, 'sine');
   setTimeout(() => beep(1318, 0.6, 0.26, 'sine'), 250);
+  vibrate(150);
 }
 // Halfway reps: two ascending notes
 function beepHalfReps() {
@@ -134,6 +143,9 @@ const el = {
   btnMergeExercises:    document.getElementById('btn-merge-exercises'),
   btnMergeCancel:       document.getElementById('btn-merge-cancel'),
   btnMergeConfirm:      document.getElementById('btn-merge-confirm'),
+  btnDeleteExercises:   document.getElementById('btn-delete-exercises'),
+  btnDeleteCancel:      document.getElementById('btn-delete-cancel'),
+  btnDeleteConfirm:     document.getElementById('btn-delete-confirm'),
   saveExerciseModal:    document.getElementById('save-exercise-modal'),
   saveExerciseBackdrop: document.getElementById('save-exercise-backdrop'),
   saveExerciseNameInput: document.getElementById('save-exercise-name-input'),
@@ -181,6 +193,14 @@ const el = {
   previewIntensityLabelB: document.getElementById('preview-intensity-label-b'),
   previewIntensityListB:  document.getElementById('preview-intensity-list-b'),
   previewIntensityLegend: document.getElementById('preview-intensity-legend'),
+  appConfirmModal:    document.getElementById('app-confirm-modal'),
+  appConfirmBackdrop: document.getElementById('app-confirm-backdrop'),
+  appConfirmMessage:  document.getElementById('app-confirm-message'),
+  appConfirmCancel:   document.getElementById('app-confirm-cancel'),
+  appConfirmConfirm:  document.getElementById('app-confirm-confirm'),
+  appConfirmBox:      document.getElementById('app-confirm-box'),
+  restNextWeights:     document.getElementById('rest-next-weights'),
+  restNextWeightsList: document.getElementById('rest-next-weights-list'),
 };
 
 // ── Module-level state ─────────────────────────────────────────────────────
@@ -234,21 +254,21 @@ function exportExercises() {
 
 function importExercisesFromFile(file) {
   const reader = new FileReader();
-  reader.onload = () => {
+  reader.onload = async () => {
     let imported;
     try {
       imported = JSON.parse(reader.result);
     } catch (_) {
-      alert('El archivo no es un JSON válido.');
+      await showAppAlert('El archivo no es un JSON válido.');
       return;
     }
     if (!Array.isArray(imported)) {
-      alert('El archivo no tiene el formato esperado.');
+      await showAppAlert('El archivo no tiene el formato esperado.');
       return;
     }
-    if (!confirm(`Se van a reemplazar los ${exercises.length} ejercicios actuales por los ${imported.length} del archivo. ¿Continuar?`)) {
-      return;
-    }
+    const ok = await showAppConfirm(
+      `Se van a reemplazar los ${exercises.length} ejercicios actuales por los ${imported.length} del archivo. ¿Continuar?`);
+    if (!ok) return;
     exercises = imported;
     saveExercises();
     renderExercisesList();
@@ -281,6 +301,10 @@ let inlineEditFromPreview = false;
 // Merge-two-exercises-into-a-superserie selection mode
 let mergeSelectMode = false;
 let mergeSelection = []; // up to 2 exercise ids
+
+// Delete-exercises selection mode
+let deleteSelectMode = false;
+let deleteSelection = []; // any number of exercise ids
 
 // Which saved exercise the currently running (or just-finished) workout came
 // from, if any — set by startWorkout(), read once by finishWorkout() to
@@ -338,6 +362,48 @@ function releaseWakeLock() {
 function showPanel(name) {
   Object.values(panels).forEach(p => p.classList.add('hidden'));
   panels[name].classList.remove('hidden');
+}
+
+// ── Generic confirm/alert modal ─────────────────────────────────────────────
+// Replaces native confirm()/alert(): those render as browser chrome (e.g.
+// "syncev.github.io dice") that can't be restyled or relabeled. This reuses
+// the same modal look as the rest of the app and always reads "Gym Timer".
+function showAppModal({ message, confirmText = 'Aceptar', cancelText = 'Cancelar', showCancel = true, danger = false }) {
+  return new Promise(resolve => {
+    el.appConfirmMessage.textContent = message;
+    el.appConfirmConfirm.textContent = confirmText;
+    el.appConfirmCancel.textContent = cancelText;
+    el.appConfirmCancel.classList.toggle('hidden', !showCancel);
+    el.appConfirmConfirm.classList.toggle('btn-modal-danger', danger);
+    el.appConfirmBox.classList.toggle('danger', danger);
+    el.appConfirmModal.classList.remove('hidden');
+
+    function cleanup(result) {
+      el.appConfirmModal.classList.add('hidden');
+      el.appConfirmConfirm.removeEventListener('click', onConfirm);
+      el.appConfirmCancel.removeEventListener('click', onCancel);
+      el.appConfirmBackdrop.removeEventListener('click', onCancel);
+      document.removeEventListener('keydown', onKeydown);
+      resolve(result);
+    }
+    function onConfirm() { cleanup(true); }
+    function onCancel()  { cleanup(false); }
+    // Native confirm()/alert() responded to Escape/Enter — keep that parity.
+    function onKeydown(e) {
+      if (e.key === 'Escape') onCancel();
+      if (e.key === 'Enter') onConfirm();
+    }
+    el.appConfirmConfirm.addEventListener('click', onConfirm);
+    el.appConfirmCancel.addEventListener('click', onCancel);
+    el.appConfirmBackdrop.addEventListener('click', onCancel);
+    document.addEventListener('keydown', onKeydown);
+  });
+}
+function showAppConfirm(message, opts = {}) {
+  return showAppModal({ message, confirmText: 'Confirmar', ...opts });
+}
+function showAppAlert(message) {
+  return showAppModal({ message, confirmText: 'Entendido', showCancel: false });
 }
 
 // ── Pause helper ───────────────────────────────────────────────────────────
@@ -601,9 +667,10 @@ function phaseDuration(ph) {
 }
 
 // ── START ──────────────────────────────────────────────────────────────────
-function startWorkout(sourceExerciseId = null) {
+async function startWorkout(sourceExerciseId = null) {
   if (toastMode === 'linked') {
-    if (!confirm('Hay un entrenamiento en curso. ¿Descartarlo y empezar uno nuevo?')) return;
+    const ok = await showAppConfirm('Hay un entrenamiento en curso. ¿Descartarlo y empezar uno nuevo?');
+    if (!ok) return;
     goToConfig();
   } else if (toastMode === 'standalone') {
     dismissRestToast();
@@ -744,6 +811,63 @@ function endSerie() {
 }
 
 // ── Super rest ─────────────────────────────────────────────────────────────
+// ── "Próximos pesos" (long rest between series) ────────────────────────────
+// Only shown when this workout came from a saved exercise — changes are
+// saved straight into that exercise's own record, same as the preview screen.
+function renderNextWeights() {
+  const exercise = activeSourceExerciseId ? exercises.find(e => e.id === activeSourceExerciseId) : null;
+  el.restNextWeights.classList.toggle('hidden', !exercise);
+  if (!exercise) return;
+
+  const nextSerie = state.serie + 1;
+  el.restNextWeightsList.innerHTML = '';
+  if (cfg.superEnabled) {
+    el.restNextWeightsList.appendChild(makeNextWeightRow(nextSerie, '1', exercise, 'var(--exercise-a)', 'A'));
+    el.restNextWeightsList.appendChild(makeNextWeightRow(nextSerie, '2', exercise, 'var(--exercise-b)', 'B'));
+  } else {
+    el.restNextWeightsList.appendChild(makeNextWeightRow(nextSerie, null, exercise, 'var(--exercise-a)', null));
+  }
+}
+
+function makeNextWeightRow(serie, sub, exercise, color, tag) {
+  const key = sub ? `${serie}-${sub}` : `${serie}`;
+  const isFallo = cfg.falloSeries.has(key);
+  // Only trust totalReps2 when reps were actually set distinctly — otherwise
+  // the (hidden) B field can hold a stale value, same pitfall as splitExercise().
+  const reps = (sub === '2' && cfg.repsDistintas) ? cfg.totalReps2 : cfg.totalReps;
+  const repsText = isFallo ? '∞' : reps;
+
+  const row = document.createElement('div');
+  row.className = 'rest-next-weight-row';
+
+  const label = document.createElement('span');
+  label.className = 'rest-next-weight-label';
+  label.style.color = color;
+  label.textContent = `Serie ${serie}${tag || ''} - ${repsText} reps`;
+
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.className = 'num-input small weight-input';
+  input.min = '0';
+  input.step = '0.5';
+  input.placeholder = '0';
+  if (cfg.weights[key]) input.value = cfg.weights[key];
+  input.addEventListener('change', () => {
+    const v = input.value === '' ? undefined : parseFloat(input.value);
+    if (v === undefined) delete cfg.weights[key]; else cfg.weights[key] = v;
+    if (!exercise.config.weights) exercise.config.weights = {};
+    if (v === undefined) delete exercise.config.weights[key]; else exercise.config.weights[key] = v;
+    saveExercises();
+  });
+
+  const unit = document.createElement('span');
+  unit.className = 'unit';
+  unit.textContent = 'Kg';
+
+  row.append(label, input, unit);
+  return row;
+}
+
 function startSuperRest() {
   state.superResting = true;
   state.superExercise = 2;
@@ -754,6 +878,9 @@ function startSuperRest() {
   el.restCountdown.textContent = cfg.superRest;
   el.restBar.style.transition = 'none';
   el.restBar.style.width = '100%';
+  // "Próximos pesos" only applies to the long rest between series, not this
+  // short A/B rest — make sure it doesn't linger from a previous long rest.
+  el.restNextWeights.classList.add('hidden');
   startRestTicker(cfg.superRest, () => {
     state.superResting = false;
     state.rep = 1;
@@ -777,6 +904,7 @@ function startRest(seconds) {
   el.restCountdown.textContent = seconds;
   el.restBar.style.transition = 'none';
   el.restBar.style.width = '100%';
+  renderNextWeights();
   startRestTicker(seconds, () => {
     state.resting = false;
     state.serie++;
@@ -1007,10 +1135,11 @@ function unminimizeWorkout() {
   else resumeRestBar();
 }
 
-el.restToastClose.addEventListener('click', (e) => {
+el.restToastClose.addEventListener('click', async (e) => {
   e.stopPropagation();
   if (toastMode === 'linked') {
-    if (confirm('Hay un entrenamiento en curso. ¿Cancelarlo?')) goToConfig();
+    const ok = await showAppConfirm('Hay un entrenamiento en curso. ¿Cancelarlo?');
+    if (ok) goToConfig();
   } else {
     dismissRestToast();
   }
@@ -1260,7 +1389,11 @@ function renderExercisesList() {
   el.exercisesList.innerHTML = '';
   el.exercisesEmpty.classList.toggle('hidden', exercises.length > 0);
   exercises.forEach(exercise => {
-    el.exercisesList.appendChild(mergeSelectMode ? createMergeSelectItem(exercise) : createExerciseItem(exercise));
+    let item;
+    if (mergeSelectMode) item = createMergeSelectItem(exercise);
+    else if (deleteSelectMode) item = createDeleteSelectItem(exercise);
+    else item = createExerciseItem(exercise);
+    el.exercisesList.appendChild(item);
   });
 }
 
@@ -1309,10 +1442,9 @@ function createExerciseItem(exercise) {
     splitBtn.className = 'exercise-btn exercise-btn-split';
     splitBtn.innerHTML = ICON_SPLIT_SVG;
     splitBtn.title = 'Separar en dos ejercicios';
-    splitBtn.addEventListener('click', () => {
-      if (confirm(`¿Separar "${exercise.name}" en dos ejercicios individuales?`)) {
-        splitExercise(exercise.id);
-      }
+    splitBtn.addEventListener('click', async () => {
+      const ok = await showAppConfirm(`¿Separar "${exercise.name}" en dos ejercicios individuales?`);
+      if (ok) splitExercise(exercise.id);
     });
     item.appendChild(splitBtn);
   }
@@ -1355,6 +1487,79 @@ function createMergeSelectItem(exercise) {
   return item;
 }
 
+// Rendered instead of createExerciseItem() while delete-select mode is
+// active — any exercise can be picked (superserie ones delete both sides at
+// once, since they're stored as a single entry).
+function createDeleteSelectItem(exercise) {
+  const item = document.createElement('div');
+  item.className = 'exercise-item merge-selectable';
+  item.dataset.id = exercise.id;
+  const isSuper = isSuperExercise(exercise);
+
+  const nameCol = document.createElement('div');
+  nameCol.className = 'exercise-name-col';
+  if (isSuper) {
+    nameCol.appendChild(createExerciseNameLine(exercise.nameA));
+    nameCol.appendChild(createExerciseNameLine(exercise.nameB));
+  } else {
+    nameCol.appendChild(createExerciseNameLine(exercise.name));
+  }
+
+  const check = document.createElement('span');
+  check.className = 'exercise-merge-check';
+  check.innerHTML = deleteSelection.includes(exercise.id) ? ICON_CHECK_SVG : '';
+
+  item.append(nameCol, check);
+  if (deleteSelection.includes(exercise.id)) item.classList.add('merge-selected');
+  item.addEventListener('click', () => toggleDeleteSelection(exercise.id));
+
+  return item;
+}
+
+// ── Delete exercises ─────────────────────────────────────────────────────────
+function enterDeleteSelectMode() {
+  deleteSelectMode = true;
+  deleteSelection = [];
+  el.btnDeleteExercises.classList.add('hidden');
+  el.btnDeleteCancel.classList.remove('hidden');
+  el.btnDeleteConfirm.classList.remove('hidden');
+  el.btnDeleteConfirm.disabled = true;
+  el.btnMergeExercises.classList.add('hidden'); // only one select mode at a time
+  renderExercisesList();
+}
+
+function exitDeleteSelectMode() {
+  deleteSelectMode = false;
+  deleteSelection = [];
+  el.btnDeleteExercises.classList.remove('hidden');
+  el.btnDeleteCancel.classList.add('hidden');
+  el.btnDeleteConfirm.classList.add('hidden');
+  if (!mergeSelectMode) el.btnMergeExercises.classList.remove('hidden');
+  renderExercisesList();
+}
+
+function toggleDeleteSelection(id) {
+  const idx = deleteSelection.indexOf(id);
+  if (idx !== -1) deleteSelection.splice(idx, 1);
+  else deleteSelection.push(id);
+  el.btnDeleteConfirm.disabled = deleteSelection.length === 0;
+  renderExercisesList();
+}
+
+el.btnDeleteExercises.addEventListener('click', enterDeleteSelectMode);
+el.btnDeleteCancel.addEventListener('click', exitDeleteSelectMode);
+el.btnDeleteConfirm.addEventListener('click', async () => {
+  if (deleteSelection.length === 0) return;
+  const n = deleteSelection.length;
+  const ok = await showAppConfirm(
+    `¿Eliminar ${n} ejercicio${n > 1 ? 's' : ''}? Los que sean superserie se eliminan por completo (ambos ejercicios).`,
+    { confirmText: 'Eliminar', danger: true });
+  if (!ok) return;
+  exercises = exercises.filter(e => !deleteSelection.includes(e.id));
+  saveExercises();
+  exitDeleteSelectMode(); // resets state + re-renders
+});
+
 // ── Merge two exercises into one superserie ─────────────────────────────────
 function enterMergeSelectMode() {
   mergeSelectMode = true;
@@ -1363,6 +1568,7 @@ function enterMergeSelectMode() {
   el.btnMergeCancel.classList.remove('hidden');
   el.btnMergeConfirm.classList.remove('hidden');
   el.btnMergeConfirm.disabled = true;
+  el.btnDeleteExercises.classList.add('hidden'); // only one select mode at a time
   renderExercisesList();
 }
 
@@ -1372,6 +1578,7 @@ function exitMergeSelectMode() {
   el.btnMergeExercises.classList.remove('hidden');
   el.btnMergeCancel.classList.add('hidden');
   el.btnMergeConfirm.classList.add('hidden');
+  if (!deleteSelectMode) el.btnDeleteExercises.classList.remove('hidden');
   renderExercisesList();
 }
 
@@ -1639,11 +1846,11 @@ function renderExercisePreview(exercise) {
     if (isSuper) {
       const pair = document.createElement('div');
       pair.className = 'weight-pair';
-      pair.appendChild(makeWeightDisplay(`${i}-1`, weights[`${i}-1`], isSuper));
-      pair.appendChild(makeWeightDisplay(`${i}-2`, weights[`${i}-2`], isSuper));
+      pair.appendChild(makeWeightDisplay(`${i}-1`, weights[`${i}-1`], isSuper, exercise));
+      pair.appendChild(makeWeightDisplay(`${i}-2`, weights[`${i}-2`], isSuper, exercise));
       el.previewWeightsList.appendChild(pair);
     } else {
-      el.previewWeightsList.appendChild(makeWeightDisplay(`${i}`, weights[`${i}`], isSuper));
+      el.previewWeightsList.appendChild(makeWeightDisplay(`${i}`, weights[`${i}`], isSuper, exercise));
     }
   }
   el.previewWeightsRow.classList.remove('hidden');
@@ -1707,7 +1914,9 @@ function makeReadonlyField(label, value, tag, color) {
   return wrap;
 }
 
-function makeWeightDisplay(key, value, isSuper) {
+// Editable — changes are saved straight into this exercise's own record so
+// weights stay up to date without needing to go through "Editar".
+function makeWeightDisplay(key, value, isSuper, exercise) {
   const item = document.createElement('div');
   item.className = 'weight-item';
 
@@ -1716,11 +1925,25 @@ function makeWeightDisplay(key, value, isSuper) {
   tag.style.color = accentColorForKey(key);
   tag.textContent = formatKeyTag(key, isSuper);
 
-  const val = document.createElement('span');
-  val.className = 'readonly-value';
-  val.textContent = value ? `${value} Kg` : '-';
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.className = 'num-input small weight-input';
+  input.min = '0';
+  input.step = '0.5';
+  input.placeholder = '0';
+  if (value) input.value = value;
+  input.addEventListener('change', () => {
+    if (!exercise.config.weights) exercise.config.weights = {};
+    if (input.value === '') delete exercise.config.weights[key];
+    else exercise.config.weights[key] = parseFloat(input.value);
+    saveExercises();
+  });
 
-  item.append(tag, val);
+  const unit = document.createElement('span');
+  unit.className = 'unit';
+  unit.textContent = 'Kg';
+
+  item.append(tag, input, unit);
   return item;
 }
 
@@ -1974,8 +2197,9 @@ function createEditingNameRow(slotLabel, name) {
   return row;
 }
 
-function cancelEditingExercise() {
-  if (!confirm('¿Salir sin guardar los cambios?')) return;
+async function cancelEditingExercise() {
+  const ok = await showAppConfirm('¿Salir sin guardar los cambios?');
+  if (!ok) return;
   const original = exercises.find(e => e.id === editingExerciseId);
   if (original) applyConfigToForm(original.config);
   editingExerciseId = null;

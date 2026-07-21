@@ -734,6 +734,41 @@ h1 {
 #rest-controls #btn-play-pause-rest { flex: 1; }
 #rest-controls .btn-primary { margin: 0; flex: 2; }
 
+#rest-next-weights {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 12px 16px;
+  margin: 16px 0;
+  flex-shrink: 0;
+}
+.rest-next-weights-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  text-align: center;
+}
+#rest-next-weights-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rest-next-weight-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rest-next-weight-label {
+  flex: 1;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
 /* ========== REST TOAST ========== */
 #rest-toast {
   position: fixed;
@@ -1070,7 +1105,7 @@ h1 {
   text-align: center;
 }
 
-.exercises-backup-btns, .exercises-merge-controls {
+.exercises-backup-btns, .exercises-merge-controls, .exercises-delete-controls {
   display: flex;
   gap: 6px;
   flex-shrink: 0;
@@ -1091,6 +1126,7 @@ h1 {
   transition: background 0.15s;
 }
 .exercises-backup-btn:active { background: #3a3a5a; }
+.exercises-delete-btn { color: var(--red); }
 
 /* Inline SVGs from the Glyphs Poly icon set (icon-sets.iconify.design/glyphs-poly) —
    fills forced to currentColor so they tint like the rest of the icon buttons.
@@ -1232,7 +1268,7 @@ h1 {
 .exercise-btn-split { color: var(--orange); }
 
 /* ========== MODAL ========== */
-#save-exercise-modal {
+.app-modal {
   position: fixed;
   inset: 0;
   z-index: 2000;
@@ -1247,9 +1283,15 @@ h1 {
   background: rgba(0, 0, 0, 0.6);
 }
 
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.92) translateY(6px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
 .modal-box {
   position: relative;
   background: var(--surface);
+  border: 2px solid var(--violet);
   border-radius: 16px;
   padding: 20px;
   width: 85%;
@@ -1258,6 +1300,17 @@ h1 {
   flex-direction: column;
   gap: 14px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  animation: modalPop 0.18s ease;
+}
+
+.modal-kicker {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--green);
+  text-align: center;
+  margin-bottom: -6px;
 }
 
 .modal-title {
@@ -1265,6 +1318,13 @@ h1 {
   font-weight: 700;
   color: var(--text);
   text-align: center;
+}
+
+.modal-message {
+  font-size: 0.95rem;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.4;
 }
 
 .modal-input {
@@ -1320,6 +1380,10 @@ h1 {
   padding: 12px;
   font-size: 0.95rem;
 }
+.btn-modal-primary.btn-primary.btn-modal-danger {
+  background: var(--red);
+}
+.modal-box.danger { border-color: var(--red); }
 
 /* ========== REGISTER INTENSITY (done panel, inline) ========== */
 #intensity-register {
@@ -1628,6 +1692,7 @@ html.compact {
   & #rest-main { gap: 12px; }
   & #rest-countdown { font-size: 4rem; }
   & #rest-bar-wrap { height: 7px; }
+  & #rest-next-weights { padding: 8px 14px; margin: 8px 0; }
 
   /* ── Done panel ── */
   & #done-panel { gap: 14px; padding: 16px; }
