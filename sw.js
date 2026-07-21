@@ -1,4 +1,4 @@
-const CACHE = 'gym-timer-v54';
+const CACHE = 'gym-timer-v56';
 const ASSETS = [
   './index.html',
   './style.css',
@@ -32,5 +32,19 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
+  );
+});
+
+// Tapping the rest-timer notification focuses the app instead of just
+// dismissing it — falls back to opening a new window if it isn't open.
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const client of list) {
+        if ('focus' in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow('./index.html');
+    })
   );
 });

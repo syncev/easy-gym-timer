@@ -31,15 +31,17 @@
       <!-- Ejercicios guardados -->
       <div class="exercises-row" id="exercises-row">
         <div class="exercises-header">
-          <div class="exercises-merge-controls" id="exercises-merge-controls">
-            <button id="btn-merge-exercises" class="exercises-backup-btn" title="Unir dos ejercicios en superserie"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none"><path fill="currentColor" d="M42 27a2 2 0 1 1-4 0zm-4-15a2 2 0 1 1 4 0zm0 15V12h4v15z"/><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M45.818 27H34.182c-1.174 0-1.762 1.42-.932 2.25l4.629 4.629a3 3 0 0 0 4.242 0l4.629-4.629c.83-.83.242-2.25-.932-2.25"/><path fill="currentColor" d="M42 53a2 2 0 1 0-4 0zm-4 15a2 2 0 1 0 4 0zm0-15v15h4V53z"/><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M45.818 53H34.182c-1.174 0-1.762-1.42-.932-2.25l4.629-4.629a3 3 0 0 1 4.242 0l4.629 4.629c.83.83.242 2.25-.932 2.25"/></g></svg></button>
-            <button id="btn-merge-cancel" class="exercises-backup-btn hidden" title="Cancelar"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path stroke="currentColor" d="m24.444 24.557l14.142 14.142l2.828 2.828L55.556 55.67"/><path stroke="currentColor" d="M55.556 24.557L41.414 38.699l-2.828 2.828L24.444 55.67"/></g></svg></button>
-            <button id="btn-merge-confirm" class="exercises-backup-btn hidden" title="Confirmar unión" disabled><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="m14.121 40.092l15.557 15.556a2 2 0 0 0 2.828 0l32.527-32.527"/></svg></button>
-          </div>
-          <div class="exercises-delete-controls" id="exercises-delete-controls">
-            <button id="btn-delete-exercises" class="exercises-backup-btn exercises-delete-btn" title="Eliminar ejercicios"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none"><path fill="currentColor" d="M23 68h34a4 4 0 0 0 4-4V20.5a.5.5 0 0 0-.5-.5h-41a.5.5 0 0 0-.5.5V64a4 4 0 0 0 4 4"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M33 30v28m14-28v28m18-38H15"/><path fill="currentColor" d="m27.855 19.999l-1.564-1.247a2 2 0 0 0 1.564 3.247zm24.29 0v2a2 2 0 0 0 1.563-3.247zm-18.22-7.612v-2a2 2 0 0 0-1.563.752zm12.15 0l1.563-1.248a2 2 0 0 0-1.564-.752zm-18.22 9.612h24.29v-4h-24.29zm1.564-.753l6.07-7.612l-3.127-2.495l-6.07 7.613zm4.506-6.86h12.15v-4h-12.15zm10.586-.752l6.07 7.612l3.127-2.494l-6.07-7.612z"/></g></svg></button>
-            <button id="btn-delete-cancel" class="exercises-backup-btn hidden" title="Cancelar"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path stroke="currentColor" d="m24.444 24.557l14.142 14.142l2.828 2.828L55.556 55.67"/><path stroke="currentColor" d="M55.556 24.557L41.414 38.699l-2.828 2.828L24.444 55.67"/></g></svg></button>
-            <button id="btn-delete-confirm" class="exercises-backup-btn hidden" title="Confirmar eliminación" disabled><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="m14.121 40.092l15.557 15.556a2 2 0 0 0 2.828 0l32.527-32.527"/></svg></button>
+          <div class="exercises-left-controls">
+            <div class="exercises-merge-controls" id="exercises-merge-controls">
+              <button id="btn-merge-exercises" class="exercises-backup-btn" title="Unir dos ejercicios en superserie"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none"><path fill="currentColor" d="M42 27a2 2 0 1 1-4 0zm-4-15a2 2 0 1 1 4 0zm0 15V12h4v15z"/><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M45.818 27H34.182c-1.174 0-1.762 1.42-.932 2.25l4.629 4.629a3 3 0 0 0 4.242 0l4.629-4.629c.83-.83.242-2.25-.932-2.25"/><path fill="currentColor" d="M42 53a2 2 0 1 0-4 0zm-4 15a2 2 0 1 0 4 0zm0-15v15h4V53z"/><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M45.818 53H34.182c-1.174 0-1.762-1.42-.932-2.25l4.629-4.629a3 3 0 0 1 4.242 0l4.629 4.629c.83.83.242 2.25-.932 2.25"/></g></svg></button>
+              <button id="btn-merge-cancel" class="exercises-backup-btn hidden" title="Cancelar"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path stroke="currentColor" d="m24.444 24.557l14.142 14.142l2.828 2.828L55.556 55.67"/><path stroke="currentColor" d="M55.556 24.557L41.414 38.699l-2.828 2.828L24.444 55.67"/></g></svg></button>
+              <button id="btn-merge-confirm" class="exercises-backup-btn hidden" title="Confirmar unión" disabled><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="m14.121 40.092l15.557 15.556a2 2 0 0 0 2.828 0l32.527-32.527"/></svg></button>
+            </div>
+            <div class="exercises-delete-controls" id="exercises-delete-controls">
+              <button id="btn-delete-exercises" class="exercises-backup-btn exercises-delete-btn" title="Eliminar ejercicios"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none"><path fill="currentColor" d="M23 68h34a4 4 0 0 0 4-4V20.5a.5.5 0 0 0-.5-.5h-41a.5.5 0 0 0-.5.5V64a4 4 0 0 0 4 4"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M33 30v28m14-28v28m18-38H15"/><path fill="currentColor" d="m27.855 19.999l-1.564-1.247a2 2 0 0 0 1.564 3.247zm24.29 0v2a2 2 0 0 0 1.563-3.247zm-18.22-7.612v-2a2 2 0 0 0-1.563.752zm12.15 0l1.563-1.248a2 2 0 0 0-1.564-.752zm-18.22 9.612h24.29v-4h-24.29zm1.564-.753l6.07-7.612l-3.127-2.495l-6.07 7.613zm4.506-6.86h12.15v-4h-12.15zm10.586-.752l6.07 7.612l3.127-2.494l-6.07-7.612z"/></g></svg></button>
+              <button id="btn-delete-cancel" class="exercises-backup-btn hidden" title="Cancelar"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path stroke="currentColor" d="m24.444 24.557l14.142 14.142l2.828 2.828L55.556 55.67"/><path stroke="currentColor" d="M55.556 24.557L41.414 38.699l-2.828 2.828L24.444 55.67"/></g></svg></button>
+              <button id="btn-delete-confirm" class="exercises-backup-btn hidden" title="Confirmar eliminación" disabled><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="m14.121 40.092l15.557 15.556a2 2 0 0 0 2.828 0l32.527-32.527"/></svg></button>
+            </div>
           </div>
           <div class="exercises-title">Ejercicios</div>
           <div class="exercises-backup-btns">
@@ -100,6 +102,17 @@
             </div>
           </div>
           <div class="sr-toggles">
+            <div id="por-lado-group" class="fallo-toggle-group">
+              <label class="toggle-wrap">
+                <input type="checkbox" id="toggle-por-lado">
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="unit">Por lado</span>
+              <div class="por-lado-rest-row">
+                <input type="number" id="por-lado-rest" min="1" max="120" value="15" class="num-input small" disabled>
+                <span class="unit">s</span>
+              </div>
+            </div>
             <div class="fallo-toggle-group">
               <label class="toggle-wrap">
                 <input type="checkbox" id="toggle-fallo">
@@ -219,8 +232,12 @@
         </div>
       </div>
 
-      <!-- Countdown text above circle -->
-      <div id="circle-timer">1.00</div>
+      <!-- Countdown text above circle, flanked by serie-nav buttons -->
+      <div id="circle-timer-row">
+        <button id="btn-prev-serie" class="btn-serie-nav hidden" title="Volver a la serie anterior"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none"><path fill="currentColor" d="M30 28a2 2 0 1 0-4 0zm-2 20h-2zm40-22h-2zm2-6a2 2 0 1 0-4 0zm-44 8v20h4V28zm44 20v-8h-4v8zm0-8V26h-4v14zm0-14v-6h-4v6zM48 70c12.15 0 22-9.85 22-22h-4c0 9.941-8.059 18-18 18zM26 48c0 12.15 9.85 22 22 22v-4c-9.941 0-18-8.059-18-18z"/><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M38.343 28H17.657c-2.088 0-3.133-2.524-1.657-4l9.879-9.879a3 3 0 0 1 4.242 0L40 24c1.476 1.476.43 4-1.657 4"/></g></svg></button>
+        <div id="circle-timer">1.00</div>
+        <button id="btn-restart-serie" class="btn-serie-nav" title="Reiniciar serie actual"><svg class="icon-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g fill="none"><path fill="currentColor" d="m28.932 63.32l-.765 1.847zm1.17.484l.765-1.848zM19.989 59.66a2 2 0 0 1 2.85-2.808zm-3.887-29.655l1.848.765zm.185 7.185a2 2 0 1 1-3.974-.454zm-3.976-.436a2 2 0 0 1 3.975.452zm3.965.535a2 2 0 0 1-3.976-.438zm13.826-21.284l.765 1.848zm19.799 0l.765-1.848zm14 14l1.848-.766zm0 19.799l1.848.765zm-14 14l.765 1.847zM29.698 61.47l1.17.485l-1.532 3.695l-1.17-.484zm-1.531 3.696a24.8 24.8 0 0 1-8.178-5.507l2.85-2.808a20.8 20.8 0 0 0 6.859 4.62zM17.95 30.77a24 24 0 0 0-1.663 6.42l-3.974-.454a28 28 0 0 1 1.941-7.497zm-1.664 6.436l-.01.083l-3.976-.438l.011-.097zm14.581-19.354A23.87 23.87 0 0 0 17.95 30.77l-3.696-1.53a27.87 27.87 0 0 1 15.082-15.083zm18.268 0a23.87 23.87 0 0 0-18.268 0l-1.53-3.695a27.87 27.87 0 0 1 21.33 0zM62.053 30.77a23.87 23.87 0 0 0-12.918-12.917l1.531-3.696A27.87 27.87 0 0 1 65.75 29.239zm0 18.268a23.87 23.87 0 0 0 0-18.268l3.696-1.53a27.87 27.87 0 0 1 0 21.33zM49.135 61.956a23.87 23.87 0 0 0 12.918-12.918l3.696 1.531a27.87 27.87 0 0 1-15.083 15.082zm1.531 3.695a27.87 27.87 0 0 1-21.33 0l1.531-3.695a23.87 23.87 0 0 0 18.268 0z"/><path fill="currentColor" d="M23.404 37.07H6.596c-1.696 0-2.545 2.051-1.346 3.25l7.629 7.629a3 3 0 0 0 4.242 0l7.629-7.629c1.2-1.199.35-3.25-1.346-3.25m26.593 1.174c1.39.758 1.39 2.754 0 3.512l-15.824 8.63c-1.332.728-2.957-.237-2.957-1.755V31.369c0-1.518 1.625-2.483 2.957-1.756z"/></g></svg></button>
+      </div>
 
       <!-- Animated circle -->
       <div id="circle-container">

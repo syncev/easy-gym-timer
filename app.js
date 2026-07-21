@@ -10,7 +10,10 @@ function beep(freq = 880, dur = 0.08, vol = 0.4, type = 'sine') {
   gain.connect(ctx.destination);
   osc.type = type;
   osc.frequency.value = freq;
-  gain.gain.setValueAtTime(vol, ctx.currentTime);
+  // All beep*() functions below pass their originally-tuned vol here — doubled
+  // once, centrally, so every timer sound plays louder by default (audible
+  // over music) without having to re-tune each call site individually.
+  gain.gain.setValueAtTime(Math.min(1, vol * 2), ctx.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
   osc.start(ctx.currentTime);
   osc.stop(ctx.currentTime + dur);
@@ -28,28 +31,85 @@ function vibrate(pattern) {
   if (navigator.vibrate) navigator.vibrate(pattern);
 }
 
-// Rising pitch tick: flat low for counts >5, rising 440→880 for last 5
+// ── Rest timer notification (Android notification bar) ──────────────────────
+// Lets the user check how much rest is left without switching back to the
+// app. Updates the SAME notification (same tag, renotify:false) every tick
+// instead of spamming a new one each second.
+let notificationPermissionAsked = false;
+
+async function ensureNotificationPermission() {
+  if (!('Notification' in window) || !('serviceWorker' in navigator)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied' || notificationPermissionAsked) return false;
+  notificationPermissionAsked = true;
+  try {
+    return (await Notification.requestPermission()) === 'granted';
+  } catch (_) {
+    return false;
+  }
+}
+
+async function showRestNotification(label, remaining) {
+  if (!(await ensureNotificationPermission())) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    reg.showNotification('Gym Timer', {
+      body: `${label}: ${Math.max(0, remaining)}s restantes`,
+      tag: 'gym-timer-rest',
+      renotify: false,
+      silent: true,
+      requireInteraction: false,
+    });
+  } catch (_) {}
+}
+
+async function closeRestNotification() {
+  if (!('serviceWorker' in navigator) || Notification.permission !== 'granted') return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const notifs = await reg.getNotifications({ tag: 'gym-timer-rest' });
+    notifs.forEach(n => n.close());
+  } catch (_) {}
+}
+
+// Rising pitch tick: flat low for counts >5, rising 440→880 for last 5.
+// Used only for "reps are about to start" countdowns (initial 10s, grace
+// period) — NOT for rest ending, which uses the descending version below so
+// the two moments don't sound identical.
 function beepCountdownTick(count) {
   beep(count > 5 ? 440 : 440 + (5 - count) * 110, 0.09, count > 5 ? 0.18 : 0.28);
 }
-// Ascending chord for "GO" — also marks the rest period actually finishing
+// Ascending chord for "GO" — reps starting now (end of the 10s/3s countdowns)
 function beepCountdownGo() {
   beep(1046, 0.12, 0.45);
   setTimeout(() => beep(1318, 0.12, 0.45), 110);
   setTimeout(() => beep(1568, 0.22, 0.45), 220);
-  vibrate([120, 80, 120]);
+  vibrate([240, 160, 240]);
+}
+// Descending mirror of beepCountdownTick/beepCountdownGo, used only while a
+// rest period (long rest or the standalone/quick-rest toast) is about to
+// end — falling pitch keeps it from being confused with the rising "reps are
+// starting" countdown, even though both end up leading into reps shortly after.
+function beepRestCountdownTick(count) {
+  beep(count > 5 ? 440 : 880 - (5 - count) * 110, 0.09, count > 5 ? 0.18 : 0.28);
+}
+function beepRestCountdownGo() {
+  beep(1568, 0.12, 0.45);
+  setTimeout(() => beep(1318, 0.12, 0.45), 110);
+  setTimeout(() => beep(1046, 0.22, 0.45), 220);
+  vibrate([240, 160, 240]);
 }
 // Grave tone for each second of the excentric phase
 function beepExcen() { beep(310, 0.13, 0.32, 'triangle'); }
 // Soft bell at 20s remaining
-function beepBell20() { beep(660, 0.7, 0.22, 'sine'); vibrate(150); }
+function beepBell20() { beep(660, 0.7, 0.22, 'sine'); vibrate(300); }
 // Single warm bell at 15s remaining
-function beepBell15() { beep(880, 0.8, 0.28, 'sine'); vibrate(150); }
+function beepBell15() { beep(880, 0.8, 0.28, 'sine'); vibrate(300); }
 // Two-note bell at 10s remaining (more urgent)
 function beepBell10() {
   beep(1046, 0.6, 0.3, 'sine');
   setTimeout(() => beep(1318, 0.6, 0.26, 'sine'), 250);
-  vibrate(150);
+  vibrate(300);
 }
 // Halfway reps: two ascending notes
 function beepHalfReps() {
@@ -78,6 +138,9 @@ const el = {
   superRest:       document.getElementById('super-rest'),
   toggleSuper:     document.getElementById('toggle-super'),
   toggleFallo:     document.getElementById('toggle-fallo'),
+  togglePorLado:   document.getElementById('toggle-por-lado'),
+  porLadoRest:     document.getElementById('por-lado-rest'),
+  porLadoGroup:    document.getElementById('por-lado-group'),
   phaseConc:       document.getElementById('phase-conc'),
   phaseIsom:       document.getElementById('phase-isom'),
   phaseExcen:      document.getElementById('phase-excen'),
@@ -92,6 +155,8 @@ const el = {
   btnSkipLabel:    document.getElementById('btn-skip-label'),
   btnSkipRest:     document.getElementById('btn-skip-rest'),
   btnRestart:      document.getElementById('btn-restart'),
+  btnRestartSerie: document.getElementById('btn-restart-serie'),
+  btnPrevSerie:    document.getElementById('btn-prev-serie'),
   btnBackWorkout:  document.getElementById('btn-back-workout'),
   btnBackRest:     document.getElementById('btn-back-rest'),
   statusSerie:     document.getElementById('status-serie'),
@@ -140,9 +205,11 @@ const el = {
   btnExportExercises:   document.getElementById('btn-export-exercises'),
   btnImportExercises:   document.getElementById('btn-import-exercises'),
   importExercisesInput: document.getElementById('import-exercises-input'),
+  mergeControls:        document.getElementById('exercises-merge-controls'),
   btnMergeExercises:    document.getElementById('btn-merge-exercises'),
   btnMergeCancel:       document.getElementById('btn-merge-cancel'),
   btnMergeConfirm:      document.getElementById('btn-merge-confirm'),
+  deleteControls:       document.getElementById('exercises-delete-controls'),
   btnDeleteExercises:   document.getElementById('btn-delete-exercises'),
   btnDeleteCancel:      document.getElementById('btn-delete-cancel'),
   btnDeleteConfirm:     document.getElementById('btn-delete-confirm'),
@@ -492,6 +559,7 @@ function goToConfig() {
   clearInterval(restTicker);
   clearTimeout(restDoneTimer);
   restDoneTimer = null;
+  closeRestNotification();
   releaseWakeLock();
   setPaused(false);
   if (toastMode === 'linked') hideToast();
@@ -530,6 +598,8 @@ function readConfig() {
     phaseExcen2:    Math.max(0.5, parseFloat(el.phaseExcen2.value) || 3),
     invertPhases1:  el.toggleInvert1.checked,
     invertPhases2:  el.toggleInvert2.checked,
+    porLadoEnabled: el.togglePorLado.checked,
+    porLadoRest:    parseInt(el.porLadoRest.value) || DEFAULT_POR_LADO_REST,
   };
 }
 
@@ -559,9 +629,14 @@ function applyConfigToForm(config) {
   el.phaseConc2.value  = config.phaseConc2;
   el.phaseIsom2.value  = config.phaseIsom2;
   el.phaseExcen2.value = config.phaseExcen2;
+  el.porLadoRest.value = config.porLadoRest ?? DEFAULT_POR_LADO_REST;
 
   el.toggleSuper.checked = config.superEnabled;
   el.toggleSuper.dispatchEvent(new Event('change'));
+
+  // Older saved exercises won't have this field at all — treat as off.
+  el.togglePorLado.checked = !!config.porLadoEnabled;
+  el.togglePorLado.dispatchEvent(new Event('change'));
 
   el.toggleFasesDistintas.checked = config.fasesDistintas;
   el.toggleFasesDistintas.dispatchEvent(new Event('change'));
@@ -594,9 +669,9 @@ function applyConfigToForm(config) {
 
 // ── Al fallo helpers ───────────────────────────────────────────────────────
 function falloKey() {
-  return cfg.superEnabled
-    ? `${state.serie}-${state.superExercise}`
-    : `${state.serie}`;
+  if (cfg.superEnabled) return `${state.serie}-${state.superExercise}`;
+  if (cfg.porLadoEnabled) return `${state.serie}-${state.lado}`;
+  return `${state.serie}`;
 }
 
 function isCurrentSeriFallo() {
@@ -606,6 +681,7 @@ function isCurrentSeriFallo() {
 function formatFalloKey(key) {
   if (key.includes('-')) {
     const [serie, ex] = key.split('-');
+    if (cfg.porLadoEnabled) return `Serie ${serie} - Lado ${ex}`;
     return `Serie ${serie}${ex === '1' ? 'A' : 'B'}`;
   }
   return `Serie ${key}`;
@@ -688,6 +764,7 @@ async function startWorkout(sourceExerciseId = null) {
     superResting: false,
     minimized: false,
     superExercise: 1,
+    lado: 1,
     falloRepsThisSerie: 0,   // reps in current serie (resets each serie)
     falloRepsPerSerie:  {},  // { key: count } recorded when each fallo serie ends
   };
@@ -796,8 +873,11 @@ function serieDone() {
   beepDone();
   if (cfg.superEnabled && state.superExercise === 1) {
     startSuperRest();
+  } else if (cfg.porLadoEnabled && state.lado === 1) {
+    startLadoRest();
   } else {
     state.superExercise = 1;
+    state.lado = 1;
     endSerie();
   }
 }
@@ -831,7 +911,12 @@ function renderNextWeights() {
 
 function makeNextWeightRow(serie, sub, exercise, color, tag) {
   const key = sub ? `${serie}-${sub}` : `${serie}`;
-  const isFallo = cfg.falloSeries.has(key);
+  // Por-lado tracks al-fallo per side using the same "-1"/"-2" suffix keys,
+  // even though there's only one (shared) weight/reps row here — if either
+  // side of the upcoming serie is al fallo, show that instead of a rep count.
+  const isFallo = cfg.porLadoEnabled
+    ? (cfg.falloSeries.has(`${serie}-1`) || cfg.falloSeries.has(`${serie}-2`))
+    : cfg.falloSeries.has(key);
   // Only trust totalReps2 when reps were actually set distinctly — otherwise
   // the (hidden) B field can hold a stale value, same pitfall as splitExercise().
   const reps = (sub === '2' && cfg.repsDistintas) ? cfg.totalReps2 : cfg.totalReps;
@@ -894,6 +979,34 @@ function startSuperRest() {
   });
 }
 
+// Short rest between the two "lados" (sides) of a "Por lado" serie — same
+// weight/reps, only al-fallo can differ per side. Structurally identical to
+// startSuperRest(), reusing state.superResting as the shared "short
+// intra-serie rest" flag since the two features are mutually exclusive.
+function startLadoRest() {
+  state.superResting = true;
+  state.lado = 2;
+  state.restTotal = cfg.porLadoRest;
+  stopTicker();
+  showPanel('rest');
+  el.restLabel.textContent = 'Cambio de lado';
+  el.restCountdown.textContent = cfg.porLadoRest;
+  el.restBar.style.transition = 'none';
+  el.restBar.style.width = '100%';
+  el.restNextWeights.classList.add('hidden');
+  startRestTicker(cfg.porLadoRest, () => {
+    state.superResting = false;
+    state.rep = 1;
+    setPaused(false);
+    unminimizeSilently();
+    updateStatusBar();
+    updateFalloCounterVisibility();
+    showPanel('workout');
+    startPhase(getPhaseOrder()[0]);
+    startTicker();
+  });
+}
+
 // ── Rest between series ────────────────────────────────────────────────────
 function startRest(seconds) {
   state.resting = true;
@@ -910,6 +1023,7 @@ function startRest(seconds) {
     state.serie++;
     state.rep = 1;
     state.superExercise = 1;
+    state.lado = 1;
     setPaused(false);
     unminimizeSilently();
     updateStatusBar();
@@ -928,20 +1042,25 @@ function startRestTicker(total, onComplete) {
     el.restBar.style.width = '0%';
   });
   beepRest();
+  showRestNotification(el.restLabel.textContent, remaining);
   restTicker = setInterval(() => {
     if (state.paused) return;
     remaining--;
     el.restCountdown.textContent = Math.max(0, remaining);
     if (state.minimized) el.restToastTime.textContent = Math.max(0, remaining);
+    showRestNotification(el.restLabel.textContent, remaining);
     if (remaining === 15) beepBell15();
     if (remaining === 10) beepBell10();
-    // Ascending tones 5→1 (low→high), same direction as initial countdown
-    if (remaining >= 1 && remaining <= 5) beepCountdownTick(remaining);
+    // Descending tones 5→1 (high→low) — deliberately the mirror of the
+    // "reps starting" countdown so the two moments don't sound the same
+    if (remaining >= 1 && remaining <= 5) beepRestCountdownTick(remaining);
+    if (remaining >= 1 && remaining <= 3) vibrate(120);
     if (remaining <= 0) {
       clearInterval(restTicker);
-      // Play the same GO chord as the initial countdown, then start the serie
-      // after a short gap so the chord doesn't overlap with beepStart
-      beepCountdownGo();
+      closeRestNotification();
+      // Descending GO chord (rest ending), then start the serie after a
+      // short gap so it doesn't overlap with beepStart
+      beepRestCountdownGo();
       restDoneTimer = setTimeout(() => {
         restDoneTimer = null;
         onComplete();
@@ -978,6 +1097,7 @@ el.btnSkipRest.addEventListener('click', () => {
   clearInterval(restTicker);
   clearTimeout(restDoneTimer);
   restDoneTimer = null;
+  closeRestNotification();
   setPaused(false);
   if (state.superResting) {
     state.superResting = false;
@@ -994,6 +1114,7 @@ el.btnSkipRest.addEventListener('click', () => {
     state.serie++;
     state.rep = 1;
     state.superExercise = 1;
+    state.lado = 1;
     updateStatusBar();
     updateFalloCounterVisibility();
     showPanel('workout');
@@ -1039,16 +1160,20 @@ function startRestToast(seconds) {
     el.restToastBar.style.transition = `width ${seconds}s linear`;
     el.restToastBar.style.width = '0%';
   }));
+  showRestNotification('Descanso', remaining);
   restAfterTicker = setInterval(() => {
     remaining--;
     el.restToastTime.textContent = Math.max(0, remaining);
+    showRestNotification('Descanso', remaining);
     if (remaining === 20) beepBell20();
     if (remaining === 15) beepBell15();
     if (remaining === 10) beepBell10();
-    if (remaining >= 1 && remaining <= 5) beepCountdownTick(remaining);
+    if (remaining >= 1 && remaining <= 5) beepRestCountdownTick(remaining);
+    if (remaining >= 1 && remaining <= 3) vibrate(120);
     if (remaining <= 0) {
       clearInterval(restAfterTicker);
-      beepCountdownGo();
+      closeRestNotification();
+      beepRestCountdownGo();
       setTimeout(dismissRestToast, 600);
     }
   }, 1000);
@@ -1061,6 +1186,7 @@ function hideToast() {
 
 function dismissRestToast() {
   clearInterval(restAfterTicker);
+  closeRestNotification();
   hideToast();
   toastMode = null;
   document.querySelectorAll('#quick-rest-presets .rest-preset-btn').forEach(b => b.classList.remove('active'));
@@ -1280,22 +1406,76 @@ el.intensityConfirm.addEventListener('click', confirmIntensity);
 function updateStatusBar() {
   let serieText = `Serie ${state.serie}/${cfg.totalSeries}`;
   if (cfg.superEnabled) serieText += state.superExercise === 1 ? ' - A' : ' - B';
+  else if (cfg.porLadoEnabled) serieText += state.lado === 1 ? ' - Lado 1' : ' - Lado 2';
   el.statusSerie.textContent = serieText;
   el.statusRep.textContent = isCurrentSeriFallo()
     ? `Rep ${state.rep}/∞`
     : `Rep ${state.rep}/${getTotalReps()}`;
+  el.btnPrevSerie.classList.toggle('hidden', state.serie <= 1);
 }
+
+// ── Restart / go back a serie (workout in progress) ─────────────────────────
+// Both stop whatever phase is running and re-enter reps through the same 3s
+// grace period used after "Saltar descanso", so the user has a moment to get
+// back into position before it actually starts again.
+function restartCurrentSerie() {
+  stopTicker();
+  setPaused(false);
+  state.rep = 1;
+  state.superExercise = 1;
+  state.lado = 1;
+  state.falloRepsThisSerie = 0;
+  updateStatusBar();
+  updateFalloCounterVisibility();
+  startGracePeriod(() => {
+    startPhase(getPhaseOrder()[0]);
+    startTicker();
+  });
+}
+
+function goToPreviousSerie() {
+  if (state.serie <= 1) return;
+  stopTicker();
+  setPaused(false);
+  state.serie--;
+  state.rep = 1;
+  state.superExercise = 1;
+  state.lado = 1;
+  state.falloRepsThisSerie = 0;
+  updateStatusBar();
+  updateFalloCounterVisibility();
+  startGracePeriod(() => {
+    startPhase(getPhaseOrder()[0]);
+    startTicker();
+  });
+}
+
+el.btnRestartSerie.addEventListener('click', async () => {
+  // Ignore taps while the initial 10s countdown or a grace period is already
+  // running — restartCurrentSerie() doesn't clear countdownTimer, so firing
+  // another one on top would race two countdowns against each other.
+  if (countdownTimer) return;
+  const ok = await showAppConfirm('¿Reiniciar la serie actual desde el principio?');
+  if (ok) restartCurrentSerie();
+});
+
+el.btnPrevSerie.addEventListener('click', async () => {
+  if (countdownTimer) return;
+  const ok = await showAppConfirm(`¿Volver a la Serie ${state.serie - 1}?`);
+  if (ok) goToPreviousSerie();
+});
 
 // ── Al fallo series UI ─────────────────────────────────────────────────────
 function updateFalloSeriesUI() {
   const total = parseInt(el.numSeries.value) || 4;
   const superOn = el.toggleSuper.checked;
+  const porLadoOn = el.togglePorLado.checked;
   el.falloSeriesBtns.innerHTML = '';
 
   const validKeys = new Set();
   for (let i = 1; i <= total; i++) {
-    if (superOn) { validKeys.add(`${i}-1`); validKeys.add(`${i}-2`); }
-    else           validKeys.add(`${i}`);
+    if (superOn || porLadoOn) { validKeys.add(`${i}-1`); validKeys.add(`${i}-2`); }
+    else                        validKeys.add(`${i}`);
   }
   for (const k of [...falloSeriesSet]) {
     if (!validKeys.has(k)) falloSeriesSet.delete(k);
@@ -1305,6 +1485,9 @@ function updateFalloSeriesUI() {
     if (superOn) {
       el.falloSeriesBtns.appendChild(createFalloBtn(`${i}A`, `${i}-1`));
       el.falloSeriesBtns.appendChild(createFalloBtn(`${i}B`, `${i}-2`));
+    } else if (porLadoOn) {
+      el.falloSeriesBtns.appendChild(createFalloBtn(`${i}L1`, `${i}-1`));
+      el.falloSeriesBtns.appendChild(createFalloBtn(`${i}L2`, `${i}-2`));
     } else {
       el.falloSeriesBtns.appendChild(createFalloBtn(`${i}`, `${i}`));
     }
@@ -1524,6 +1707,7 @@ function enterDeleteSelectMode() {
   el.btnDeleteCancel.classList.remove('hidden');
   el.btnDeleteConfirm.classList.remove('hidden');
   el.btnDeleteConfirm.disabled = true;
+  el.deleteControls.classList.add('select-active');
   el.btnMergeExercises.classList.add('hidden'); // only one select mode at a time
   renderExercisesList();
 }
@@ -1534,6 +1718,7 @@ function exitDeleteSelectMode() {
   el.btnDeleteExercises.classList.remove('hidden');
   el.btnDeleteCancel.classList.add('hidden');
   el.btnDeleteConfirm.classList.add('hidden');
+  el.deleteControls.classList.remove('select-active');
   if (!mergeSelectMode) el.btnMergeExercises.classList.remove('hidden');
   renderExercisesList();
 }
@@ -1568,6 +1753,7 @@ function enterMergeSelectMode() {
   el.btnMergeCancel.classList.remove('hidden');
   el.btnMergeConfirm.classList.remove('hidden');
   el.btnMergeConfirm.disabled = true;
+  el.mergeControls.classList.add('select-active');
   el.btnDeleteExercises.classList.add('hidden'); // only one select mode at a time
   renderExercisesList();
 }
@@ -1578,6 +1764,7 @@ function exitMergeSelectMode() {
   el.btnMergeExercises.classList.remove('hidden');
   el.btnMergeCancel.classList.add('hidden');
   el.btnMergeConfirm.classList.add('hidden');
+  el.mergeControls.classList.remove('select-active');
   if (!deleteSelectMode) el.btnDeleteExercises.classList.remove('hidden');
   renderExercisesList();
 }
@@ -1602,6 +1789,7 @@ el.btnMergeConfirm.addEventListener('click', () => {
 
 const DEFAULT_SUPER_REST = 20;   // matches #super-rest's HTML default
 const DEFAULT_REST_SERIES = 120; // matches #rest-series's HTML default
+const DEFAULT_POR_LADO_REST = 15; // matches #por-lado-rest's HTML default
 
 // Combines two standalone exercises (selection order → A, B) into one
 // superserie exercise. Series/reps/phases/weights/al-fallo/intensity each
@@ -1783,7 +1971,11 @@ function accentColorForKey(key) {
   return key.endsWith('-2') ? 'var(--exercise-b)' : 'var(--exercise-a)';
 }
 
-function formatKeyTag(key, isSuper) {
+function formatKeyTag(key, isSuper, isPorLado) {
+  if (isPorLado && key.includes('-')) {
+    const [serie, ex] = key.split('-');
+    return `S.${serie} L${ex}`;
+  }
   if (!isSuper) return `S.${key}`;
   const [serie, ex] = key.split('-');
   return `S.${serie}${ex === '1' ? 'A' : 'B'}`;
@@ -1833,25 +2025,21 @@ function renderExercisePreview(exercise) {
     const tag = document.createElement('span');
     tag.className = 'preview-tag';
     tag.style.color = accentColorForKey(key);
-    tag.textContent = formatKeyTag(key, isSuper);
+    tag.textContent = formatKeyTag(key, isSuper, config.porLadoEnabled);
     el.previewFalloTags.appendChild(tag);
   });
 
   // Weights — always shown for every serie (even at 0/unrecorded, shown as
-  // "-", since an exercise may sometimes be bodyweight-only). A/B pairs are
-  // wrapped together so a line-break moves both, never just one.
+  // "-", since an exercise may sometimes be bodyweight-only). Same order as
+  // the editable Series module: all of A's series first, then all of B's —
+  // not interleaved by serie.
   el.previewWeightsList.innerHTML = '';
   const weights = config.weights || {};
-  for (let i = 1; i <= config.totalSeries; i++) {
-    if (isSuper) {
-      const pair = document.createElement('div');
-      pair.className = 'weight-pair';
-      pair.appendChild(makeWeightDisplay(`${i}-1`, weights[`${i}-1`], isSuper, exercise));
-      pair.appendChild(makeWeightDisplay(`${i}-2`, weights[`${i}-2`], isSuper, exercise));
-      el.previewWeightsList.appendChild(pair);
-    } else {
-      el.previewWeightsList.appendChild(makeWeightDisplay(`${i}`, weights[`${i}`], isSuper, exercise));
-    }
+  if (isSuper) {
+    for (let i = 1; i <= config.totalSeries; i++) el.previewWeightsList.appendChild(makeWeightDisplay(`${i}-1`, weights[`${i}-1`], isSuper, exercise));
+    for (let i = 1; i <= config.totalSeries; i++) el.previewWeightsList.appendChild(makeWeightDisplay(`${i}-2`, weights[`${i}-2`], isSuper, exercise));
+  } else {
+    for (let i = 1; i <= config.totalSeries; i++) el.previewWeightsList.appendChild(makeWeightDisplay(`${i}`, weights[`${i}`], isSuper, exercise));
   }
   el.previewWeightsRow.classList.remove('hidden');
 
@@ -2355,18 +2543,44 @@ function startExerciseDrag(e, item) {
   let startY = e.clientY;
   item.classList.add('dragging');
   item.style.position = 'relative';
+  item.style.zIndex = '10';
 
   function onMove(ev) {
-    const afterEl = getDragAfterElement(list, ev.clientY);
+    // Clamp to the list's own bounds — previously the raw cursor Y drove the
+    // transform directly, so a fast/overshot drag could carry the item past
+    // the first/last row and visually out of the Ejercicios card entirely.
+    const listBox = list.getBoundingClientRect();
+    const y = Math.min(Math.max(ev.clientY, listBox.top), listBox.bottom);
+
+    const afterEl = getDragAfterElement(list, y);
     const currentNext = item.nextElementSibling;
     if (afterEl !== item && afterEl !== currentNext) {
+      // FLIP the siblings that are about to shift, so they slide smoothly
+      // into their new slot instead of snapping there instantly — same
+      // technique as flipReorder() for the phase items. Without this, only
+      // the dragged item moved smoothly and everything else "teleported",
+      // which read as clumsy/non-magnetic.
+      const siblings = [...list.querySelectorAll('.exercise-item:not(.dragging)')];
+      const before = new Map(siblings.map(s => [s, s.getBoundingClientRect().top]));
+
       const prevTop = item.getBoundingClientRect().top;
       if (afterEl == null) list.appendChild(item);
       else list.insertBefore(item, afterEl);
       const newTop = item.getBoundingClientRect().top;
       startY += (newTop - prevTop);
+
+      siblings.forEach(s => {
+        const dy = before.get(s) - s.getBoundingClientRect().top;
+        if (Math.abs(dy) < 1) return;
+        s.style.transition = 'none';
+        s.style.transform = `translateY(${dy}px)`;
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          s.style.transition = 'transform 0.2s ease';
+          s.style.transform = '';
+        }));
+      });
     }
-    item.style.transform = `translateY(${ev.clientY - startY}px)`;
+    item.style.transform = `translateY(${y - startY}px)`;
   }
 
   function onUp(ev) {
@@ -2377,6 +2591,7 @@ function startExerciseDrag(e, item) {
     item.classList.remove('dragging');
     item.style.transform = '';
     item.style.position = '';
+    item.style.zIndex = '';
     syncExercisesOrderFromDOM();
   }
 
@@ -2503,6 +2718,7 @@ el.toggleSuper.addEventListener('change', () => {
   el.superRest.style.opacity = on ? '1' : '0.4';
   setVisible(el.fasesDistintasGroup, on);
   setVisible(el.repsDistintasGroup, on);
+  setVisible(el.porLadoGroup, !on); // mutually exclusive with "Por lado"
   if (!on) {
     el.toggleFasesDistintas.checked = false;
     setVisible(el.phasesSet2, false);
@@ -2510,12 +2726,31 @@ el.toggleSuper.addEventListener('change', () => {
     el.toggleRepsDistintas.checked = false;
     setVisible(el.repsBGroup, false);
     setVisible(el.repsALabel, false);
+  } else if (el.togglePorLado.checked) {
+    el.togglePorLado.checked = false;
+    el.togglePorLado.dispatchEvent(new Event('change'));
   }
   if (el.toggleFallo.checked) {
     falloSeriesSet.clear();
     updateFalloSeriesUI();
   }
   updateWeightsUI();
+});
+
+// ── Toggle: Por lado (same exercise, same peso/reps, done in two rounds —
+//    e.g. one arm then the other) ──────────────────────────────────────────
+el.togglePorLado.addEventListener('change', () => {
+  const on = el.togglePorLado.checked;
+  el.porLadoRest.disabled = !on;
+  el.porLadoRest.style.opacity = on ? '1' : '0.4';
+  if (on && el.toggleSuper.checked) {
+    el.toggleSuper.checked = false;
+    el.toggleSuper.dispatchEvent(new Event('change'));
+  }
+  if (el.toggleFallo.checked) {
+    falloSeriesSet.clear();
+    updateFalloSeriesUI();
+  }
 });
 
 // ── Toggle: Invertir fases (FLIP animation) ───────────────────────────────
@@ -2550,6 +2785,7 @@ el.numSeries.addEventListener('input', () => {
 
 // ── Init disabled states ───────────────────────────────────────────────────
 el.superRest.style.opacity = '0.4';
+el.porLadoRest.style.opacity = '0.4';
 
 // ── Rest presets (done panel) ──────────────────────────────────────────────
 document.querySelectorAll('#done-rest-presets .rest-preset-btn').forEach(btn => {
