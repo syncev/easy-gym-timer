@@ -391,7 +391,7 @@ h1 {
 /* Series + Reps row */
 .series-reps-row { flex-direction: column; align-items: flex-start; gap: 8px; }
 .sr-inputs { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
-.sr-toggles { display: flex; align-items: flex-start; justify-content: space-evenly; width: 100%; }
+.sr-toggles { display: flex; align-items: flex-start; justify-content: space-evenly; flex-wrap: wrap; gap: 8px; width: 100%; }
 
 /* Phases row */
 .phases-row { flex-direction: column; align-items: flex-start; gap: 10px; }
@@ -441,6 +441,25 @@ h1 {
   gap: 4px;
 }
 #por-lado-rest { opacity: 0.4; }
+
+/* A/B picker — which side does the two "lado" rounds, only shown once both
+   Superserie and Por lado are on together */
+.por-lado-side-group {
+  display: flex;
+  gap: 4px;
+}
+.por-lado-side-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: none;
+  background: var(--surface2);
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.por-lado-side-btn.active { background: var(--orange); color: #000; }
 
 /* Al fallo serie selector buttons — full-width so they wrap to a second line */
 .fallo-btns {
@@ -1132,7 +1151,7 @@ h1 {
 
 .exercises-left-controls {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-evenly;
   align-items: center;
 }
 

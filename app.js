@@ -49,16 +49,41 @@ async function ensureNotificationPermission() {
   }
 }
 
+// Renders the remaining seconds as a small PNG (data URL) so it can be used
+// as the notification's badge — Android shows the badge (not the body text)
+// in the collapsed status bar, and without one it falls back to a generic
+// bell icon. Android masks the badge to its alpha channel, so a plain white
+// numeral on a transparent background is exactly what renders there.
+function makeSecondsBadge(seconds) {
+  const text = String(Math.max(0, seconds));
+  const size = 96;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const c2d = canvas.getContext('2d');
+  c2d.clearRect(0, 0, size, size);
+  c2d.fillStyle = '#fff';
+  c2d.textAlign = 'center';
+  c2d.textBaseline = 'middle';
+  const fontSize = text.length >= 3 ? 32 : text.length === 2 ? 42 : 54;
+  c2d.font = `bold ${fontSize}px sans-serif`;
+  c2d.fillText(text, size / 2, size / 2 + 4);
+  return canvas.toDataURL('image/png');
+}
+
 async function showRestNotification(label, remaining) {
   if (!(await ensureNotificationPermission())) return;
   try {
     const reg = await navigator.serviceWorker.ready;
+    const badge = makeSecondsBadge(remaining);
     reg.showNotification('Gym Timer', {
       body: `${label}: ${Math.max(0, remaining)}s restantes`,
       tag: 'gym-timer-rest',
       renotify: false,
       silent: true,
       requireInteraction: false,
+      badge,
+      icon: badge,
     });
   } catch (_) {}
 }
@@ -141,6 +166,7 @@ const el = {
   togglePorLado:   document.getElementById('toggle-por-lado'),
   porLadoRest:     document.getElementById('por-lado-rest'),
   porLadoGroup:    document.getElementById('por-lado-group'),
+  porLadoSideGroup: document.getElementById('por-lado-side-group'),
   phaseConc:       document.getElementById('phase-conc'),
   phaseIsom:       document.getElementById('phase-isom'),
   phaseExcen:      document.getElementById('phase-excen'),
@@ -600,6 +626,9 @@ function readConfig() {
     invertPhases2:  el.toggleInvert2.checked,
     porLadoEnabled: el.togglePorLado.checked,
     porLadoRest:    parseInt(el.porLadoRest.value) || DEFAULT_POR_LADO_REST,
+    // Which exercise does the two "lado" rounds when Superserie is also on —
+    // irrelevant (but harmless) otherwise.
+    porLadoSide:    document.querySelector('.por-lado-side-btn.active')?.dataset.side || 'A',
   };
 }
 
@@ -630,6 +659,10 @@ function applyConfigToForm(config) {
   el.phaseIsom2.value  = config.phaseIsom2;
   el.phaseExcen2.value = config.phaseExcen2;
   el.porLadoRest.value = config.porLadoRest ?? DEFAULT_POR_LADO_REST;
+  const side = config.porLadoSide === 'B' ? 'B' : 'A';
+  document.querySelectorAll('.por-lado-side-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.side === side);
+  });
 
   el.toggleSuper.checked = config.superEnabled;
   el.toggleSuper.dispatchEvent(new Event('change'));
@@ -668,20 +701,54 @@ function applyConfigToForm(config) {
 }
 
 // ── Al fallo helpers ───────────────────────────────────────────────────────
-function falloKey() {
+// True while the CURRENT rep is inside a round that "Por lado" is splitting
+// into two — either the whole exercise (no Superserie), or specifically
+// whichever side (A/B) the user picked when both are on together.
+function porLadoAppliesNow() {
+  if (!cfg.porLadoEnabled) return false;
+  if (!cfg.superEnabled) return true;
+  const currentSide = state.superExercise === 1 ? 'A' : 'B';
+  return cfg.porLadoSide === currentSide;
+}
+
+// Which al-fallo TOGGLE applies right now — one per side (A/B) when
+// Superserie is on, regardless of whether that side is also split into two
+// "lado" rounds (both rounds share the same al-fallo setting; see
+// falloRecordKey() below for why the recorded rep count still needs its own
+// per-round key).
+function falloConfigKey() {
   if (cfg.superEnabled) return `${state.serie}-${state.superExercise}`;
   if (cfg.porLadoEnabled) return `${state.serie}-${state.lado}`;
   return `${state.serie}`;
 }
 
 function isCurrentSeriFallo() {
-  return cfg.falloSeries.has(falloKey());
+  return cfg.falloSeries.has(falloConfigKey());
 }
 
+// Where to store the rep count once a round ends. Identical to
+// falloConfigKey() except when Superserie + Por lado are combined on the
+// same side — there, both rounds share one al-fallo toggle but need
+// DIFFERENT storage keys, or the second round's count would silently
+// overwrite the first's.
+function falloRecordKey() {
+  if (cfg.superEnabled && porLadoAppliesNow()) {
+    return `${state.serie}-${state.superExercise}-L${state.lado}`;
+  }
+  return falloConfigKey();
+}
+
+// Key shapes: "N" (plain), "N-1"/"N-2" (super side, or por-lado-only round),
+// "N-1-L2" (super side that's also split into two por-lado rounds).
 function formatFalloKey(key) {
+  const parts = key.split('-');
+  if (parts.length === 3) {
+    const [serie, side, lado] = parts;
+    return `Serie ${serie}${side === '1' ? 'A' : 'B'} - Lado ${lado.replace('L', '')}`;
+  }
   if (key.includes('-')) {
     const [serie, ex] = key.split('-');
-    if (cfg.porLadoEnabled) return `Serie ${serie} - Lado ${ex}`;
+    if (cfg.porLadoEnabled && !cfg.superEnabled) return `Serie ${serie} - Lado ${ex}`;
     return `Serie ${serie}${ex === '1' ? 'A' : 'B'}`;
   }
   return `Serie ${key}`;
@@ -864,20 +931,26 @@ function repDone() {
 
 // ── Serie done ─────────────────────────────────────────────────────────────
 function serieDone() {
-  // Persist fallo reps for the exercise just completed
+  // Persist fallo reps for the round just completed
   if (isCurrentSeriFallo() && state.falloRepsThisSerie > 0) {
-    state.falloRepsPerSerie[falloKey()] = state.falloRepsThisSerie;
+    state.falloRepsPerSerie[falloRecordKey()] = state.falloRepsThisSerie;
   }
   state.falloRepsThisSerie = 0;
 
   beepDone();
+
+  // The current side (whole exercise if not Superserie) still has a second
+  // "lado" round left — do that before considering super-rest/end-of-serie.
+  if (porLadoAppliesNow() && state.lado === 1) {
+    startLadoRest();
+    return;
+  }
+  state.lado = 1;
+
   if (cfg.superEnabled && state.superExercise === 1) {
     startSuperRest();
-  } else if (cfg.porLadoEnabled && state.lado === 1) {
-    startLadoRest();
   } else {
     state.superExercise = 1;
-    state.lado = 1;
     endSerie();
   }
 }
@@ -911,10 +984,11 @@ function renderNextWeights() {
 
 function makeNextWeightRow(serie, sub, exercise, color, tag) {
   const key = sub ? `${serie}-${sub}` : `${serie}`;
-  // Por-lado tracks al-fallo per side using the same "-1"/"-2" suffix keys,
-  // even though there's only one (shared) weight/reps row here — if either
-  // side of the upcoming serie is al fallo, show that instead of a rep count.
-  const isFallo = cfg.porLadoEnabled
+  // Non-super por-lado tracks al-fallo per round using the same "-1"/"-2"
+  // suffix keys, even though there's only one (shared) weight/reps row here —
+  // if either round of the upcoming serie is al fallo, show that instead of a
+  // rep count. When Superserie is also on, each row is just its own side.
+  const isFallo = (cfg.porLadoEnabled && !cfg.superEnabled)
     ? (cfg.falloSeries.has(`${serie}-1`) || cfg.falloSeries.has(`${serie}-2`))
     : cfg.falloSeries.has(key);
   // Only trust totalReps2 when reps were actually set distinctly — otherwise
@@ -1405,8 +1479,12 @@ el.intensityConfirm.addEventListener('click', confirmIntensity);
 // ── Status bar ─────────────────────────────────────────────────────────────
 function updateStatusBar() {
   let serieText = `Serie ${state.serie}/${cfg.totalSeries}`;
-  if (cfg.superEnabled) serieText += state.superExercise === 1 ? ' - A' : ' - B';
-  else if (cfg.porLadoEnabled) serieText += state.lado === 1 ? ' - Lado 1' : ' - Lado 2';
+  if (cfg.superEnabled) {
+    serieText += state.superExercise === 1 ? ' - A' : ' - B';
+    if (porLadoAppliesNow()) serieText += ` - Lado ${state.lado}`;
+  } else if (cfg.porLadoEnabled) {
+    serieText += ` - Lado ${state.lado}`;
+  }
   el.statusSerie.textContent = serieText;
   el.statusRep.textContent = isCurrentSeriFallo()
     ? `Rep ${state.rep}/∞`
@@ -1972,13 +2050,18 @@ function accentColorForKey(key) {
 }
 
 function formatKeyTag(key, isSuper, isPorLado) {
+  // Super takes priority: these keys are always per-SIDE (weight/al-fallo
+  // config are shared across a side's two lado rounds), even when that side
+  // is also split into two rounds.
+  if (isSuper) {
+    const [serie, ex] = key.split('-');
+    return `S.${serie}${ex === '1' ? 'A' : 'B'}`;
+  }
   if (isPorLado && key.includes('-')) {
     const [serie, ex] = key.split('-');
     return `S.${serie} L${ex}`;
   }
-  if (!isSuper) return `S.${key}`;
-  const [serie, ex] = key.split('-');
-  return `S.${serie}${ex === '1' ? 'A' : 'B'}`;
+  return `S.${key}`;
 }
 
 function showExercisePreview(exercise) {
@@ -2718,7 +2801,7 @@ el.toggleSuper.addEventListener('change', () => {
   el.superRest.style.opacity = on ? '1' : '0.4';
   setVisible(el.fasesDistintasGroup, on);
   setVisible(el.repsDistintasGroup, on);
-  setVisible(el.porLadoGroup, !on); // mutually exclusive with "Por lado"
+  updatePorLadoSideVisibility();
   if (!on) {
     el.toggleFasesDistintas.checked = false;
     setVisible(el.phasesSet2, false);
@@ -2726,9 +2809,6 @@ el.toggleSuper.addEventListener('change', () => {
     el.toggleRepsDistintas.checked = false;
     setVisible(el.repsBGroup, false);
     setVisible(el.repsALabel, false);
-  } else if (el.togglePorLado.checked) {
-    el.togglePorLado.checked = false;
-    el.togglePorLado.dispatchEvent(new Event('change'));
   }
   if (el.toggleFallo.checked) {
     falloSeriesSet.clear();
@@ -2738,19 +2818,29 @@ el.toggleSuper.addEventListener('change', () => {
 });
 
 // ── Toggle: Por lado (same exercise, same peso/reps, done in two rounds —
-//    e.g. one arm then the other) ──────────────────────────────────────────
+//    e.g. one arm then the other). Can coexist with Superserie — in that
+//    case the A/B picker below decides which of the two exercises is the
+//    one split into two rounds; the other one runs normally. ───────────────
+function updatePorLadoSideVisibility() {
+  setVisible(el.porLadoSideGroup, el.toggleSuper.checked && el.togglePorLado.checked);
+}
+
 el.togglePorLado.addEventListener('change', () => {
   const on = el.togglePorLado.checked;
   el.porLadoRest.disabled = !on;
   el.porLadoRest.style.opacity = on ? '1' : '0.4';
-  if (on && el.toggleSuper.checked) {
-    el.toggleSuper.checked = false;
-    el.toggleSuper.dispatchEvent(new Event('change'));
-  }
+  updatePorLadoSideVisibility();
   if (el.toggleFallo.checked) {
     falloSeriesSet.clear();
     updateFalloSeriesUI();
   }
+});
+
+document.querySelectorAll('.por-lado-side-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.por-lado-side-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
 });
 
 // ── Toggle: Invertir fases (FLIP animation) ───────────────────────────────

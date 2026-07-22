@@ -112,6 +112,12 @@
                 <input type="number" id="por-lado-rest" min="1" max="120" value="15" class="num-input small" disabled>
                 <span class="unit">s</span>
               </div>
+              <!-- Only shown when Superserie is also on — picks which of the
+                   two exercises (A or B) is the one done in two rounds -->
+              <div id="por-lado-side-group" class="por-lado-side-group hidden">
+                <button type="button" class="por-lado-side-btn active" data-side="A">A</button>
+                <button type="button" class="por-lado-side-btn" data-side="B">B</button>
+              </div>
             </div>
             <div class="fallo-toggle-group">
               <label class="toggle-wrap">
